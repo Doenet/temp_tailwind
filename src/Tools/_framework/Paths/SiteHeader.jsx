@@ -1,21 +1,17 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef } from "react";
 import {
   Button,
   Center,
   Grid,
   GridItem,
   Text,
-  Icon,
   useColorMode,
-  useColorModeValue,
   HStack,
-  Spinner,
   Menu,
   MenuButton,
   MenuList,
   MenuItem,
   Avatar,
-  Box,
   VStack,
   ButtonGroup,
 } from "@chakra-ui/react";
@@ -177,22 +173,9 @@ export function SiteHeader(props) {
                     >
                       Portfolio
                     </NavLinkTab>
-                    <Center
-                      cursor="pointer"
-                      data-test="My Courses"
-                      fontSize="md"
-                      onClick={() => {
-                        navigateTo.current = "/course";
-                        setRecoilPageToolView({
-                          page: "course",
-                          tool: "",
-                          view: "",
-                          params: {},
-                        });
-                      }}
-                    >
+                    <NavLinkTab to="courses" dataTest="My Courses">
                       My Courses
-                    </Center>
+                    </NavLinkTab>
                     {isAdmin && (
                       <NavLinkTab to="admin" dataTest="Admin">
                         Admin

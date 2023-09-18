@@ -225,16 +225,20 @@ export default class Ray extends GraphicalComponent {
           dependencyValues.endpointAttr !== null &&
           dependencyValues.directionAttr !== null
         ) {
+          let warnings = [];
           if (dependencyValues.throughAttr !== null) {
             // if overprescribed by specifying through, endpoint, and direction
             // we ignore through
-            console.warn(
-              `Ray is prescribed by through, endpoint, and direction.  Ignoring specified through.`,
-            );
+            warnings.push({
+              message:
+                "Ray is prescribed by through, endpoint, and direction.  Ignoring specified through.",
+              level: 1,
+            });
           }
           return {
             setValue: { basedOnThrough: false },
             checkForActualChange: { basedOnThrough: true },
+            sendWarnings: warnings,
           };
         }
 
@@ -629,16 +633,28 @@ export default class Ray extends GraphicalComponent {
               dependencyValues.numDimDirection !==
               dependencyValues.numDimEndpoint
             ) {
-              console.warn(`numDimensions mismatch in vector`);
-              return { setValue: { numDimensions: NaN } };
+              let warning = {
+                message: "numDimensions mismatch in ray.",
+                level: 1,
+              };
+              return {
+                setValue: { numDimensions: NaN },
+                sendWarnings: [warning],
+              };
             }
           } else if (dependencyValues.basedOnThrough) {
             if (
               dependencyValues.numDimDirection !==
               dependencyValues.numDimThrough
             ) {
-              console.warn(`numDimensions mismatch in vector`);
-              return { setValue: { numDimensions: NaN } };
+              let warning = {
+                message: "numDimensions mismatch in ray.",
+                level: 1,
+              };
+              return {
+                setValue: { numDimensions: NaN },
+                sendWarnings: [warning],
+              };
             }
           }
           numDimensions = dependencyValues.numDimDirection;
@@ -647,8 +663,14 @@ export default class Ray extends GraphicalComponent {
             if (
               dependencyValues.numDimEndpoint !== dependencyValues.numDimThrough
             ) {
-              console.warn(`numDimensions mismatch in vector`);
-              return { setValue: { numDimensions: NaN } };
+              let warning = {
+                message: "numDimensions mismatch in ray.",
+                level: 1,
+              };
+              return {
+                setValue: { numDimensions: NaN },
+                sendWarnings: [warning],
+              };
             }
           }
           numDimensions = dependencyValues.numDimEndpoint;
@@ -1343,7 +1365,7 @@ export default class Ray extends GraphicalComponent {
 
       definition({ dependencyValues }) {
         if (Number.isNaN(dependencyValues.numDimensions)) {
-          return null;
+          return { setValue: { numericalEndpoint: [] } };
         }
 
         let endpoint = dependencyValues.endpoint;
@@ -1374,7 +1396,7 @@ export default class Ray extends GraphicalComponent {
 
       definition({ dependencyValues }) {
         if (Number.isNaN(dependencyValues.numDimensions)) {
-          return null;
+          return { setValue: { numericalThroughpoint: [] } };
         }
 
         let through = dependencyValues.through;
@@ -1385,6 +1407,58 @@ export default class Ray extends GraphicalComponent {
         }
 
         return { setValue: { numericalThroughpoint } };
+      },
+    };
+
+    stateVariableDefinitions.directionCoords = {
+      isLocation: true,
+      returnDependencies: () => ({
+        direction: {
+          dependencyType: "stateVariable",
+          variableName: "direction",
+        },
+      }),
+      definition({ dependencyValues }) {
+        let coordsAst = [];
+        for (let v of dependencyValues.direction) {
+          if (v) {
+            coordsAst.push(v.tree);
+          } else {
+            coordsAst.push("\uff3f");
+          }
+        }
+        if (coordsAst.length > 1) {
+          coordsAst = ["vector", ...coordsAst];
+        } else if (coordsAst.length === 1) {
+          coordsAst = coordsAst[0];
+        } else {
+          coordsAst = "\uff3f";
+        }
+
+        return { setValue: { directionCoords: me.fromAst(coordsAst) } };
+      },
+      inverseDefinition({ desiredStateVariableValues }) {
+        let coordsAst = desiredStateVariableValues.directionCoords.tree;
+        let newDirection;
+
+        if (
+          Array.isArray(coordsAst) &&
+          vectorOperators.includes(coordsAst[0])
+        ) {
+          newDirection = coordsAst.slice(1).map((x) => me.fromAst(x));
+        } else {
+          newDirection = [desiredStateVariableValues.directionCoords];
+        }
+
+        return {
+          success: true,
+          instructions: [
+            {
+              setDependency: "direction",
+              desiredValue: newDirection,
+            },
+          ],
+        };
       },
     };
 
@@ -1467,6 +1541,16 @@ export default class Ray extends GraphicalComponent {
 
     return stateVariableDefinitions;
   }
+
+  static adapters = [
+    {
+      stateVariable: "directionCoords",
+      componentType: "_directionComponent",
+      stateVariablesToShadow: Object.keys(
+        returnRoundingStateVariableDefinitions(),
+      ),
+    },
+  ];
 
   async moveRay({
     endpointcoords,
@@ -1712,8 +1796,6 @@ export default class Ray extends GraphicalComponent {
         skipRendererUpdate,
       });
     }
-
-    this.coreFunctions.resolveAction({ actionId });
   }
 
   async rayFocused({
@@ -1731,7 +1813,5 @@ export default class Ray extends GraphicalComponent {
         skipRendererUpdate,
       });
     }
-
-    this.coreFunctions.resolveAction({ actionId });
   }
 }

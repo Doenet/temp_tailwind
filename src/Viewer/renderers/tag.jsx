@@ -1,8 +1,8 @@
 import React from "react";
-import useDoenetRender from "../useDoenetRenderer";
+import useDoenetRenderer from "../useDoenetRenderer";
 
 export default React.memo(function Tag(props) {
-  let { name, id, SVs, children } = useDoenetRender(props);
+  let { name, id, SVs, children } = useDoenetRenderer(props);
 
   if (SVs.hidden) {
     return null;
@@ -13,6 +13,8 @@ export default React.memo(function Tag(props) {
 
   if (SVs.selfClosed) {
     close = "/>";
+  } else if (SVs.closing) {
+    open = "</";
   }
 
   return (

@@ -1,6 +1,6 @@
 import me from "math-expressions";
 import { createFunctionFromDefinition } from "../../../../src/Core/utils/function";
-import { cesc } from "../../../../src/_utils/url";
+import { cesc, cesc2 } from "../../../../src/_utils/url";
 
 describe("Evaluate Tag Tests", function () {
   beforeEach(() => {
@@ -5835,6 +5835,74 @@ describe("Evaluate Tag Tests", function () {
       });
   });
 
+  it("evaluate at infinity, interpolated functions", () => {
+    cy.window().then(async (win) => {
+      win.postMessage(
+        {
+          doenetML: `
+  <p>f1: <function name="f1" through="(-10,2) (10,2)" /></p>
+  <p>f2: <function name="f2" through="(-10,2) (10,4)" /></p>
+  <p>f3: <function name="f3" through="(-10,2) (10,-4)" /></p>
+  <p>f4: <function name="f4" minima="(-5,2)" maxima="(5,8)" /></p>
+  <p>f5: <function name="f5" minima="(5,2)" maxima="(-5,8)" /></p>
+
+  <p><evaluate function="$f1" input="Infinity" name="f1pn" /></p>
+  <p><evaluate function="$f1" input="-Infinity" name="f1mn" /></p>
+
+  <p><evaluate function="$f2" input="Infinity" name="f2pn" /></p>
+  <p><evaluate function="$f2" input="-Infinity" name="f2mn" /></p>
+
+  <p><evaluate function="$f3" input="Infinity" name="f3pn" /></p>
+  <p><evaluate function="$f3" input="-Infinity" name="f3mn" /></p>
+
+  <p><evaluate function="$f4" input="Infinity" name="f4pn" /></p>
+  <p><evaluate function="$f4" input="-Infinity" name="f4mn" /></p>
+
+  <p><evaluate function="$f5" input="Infinity" name="f5pn" /></p>
+  <p><evaluate function="$f5" input="-Infinity" name="f5mn" /></p>
+
+  `,
+        },
+        "*",
+      );
+    });
+
+    cy.get(cesc2("#/f1pn") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "2");
+    cy.get(cesc2("#/f1mn") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "2");
+
+    cy.get(cesc2("#/f2pn") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "∞");
+    cy.get(cesc2("#/f2mn") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "−∞");
+
+    cy.get(cesc2("#/f3pn") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "−∞");
+    cy.get(cesc2("#/f3mn") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "∞");
+
+    cy.get(cesc2("#/f4pn") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "−∞");
+    cy.get(cesc2("#/f4mn") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "∞");
+
+    cy.get(cesc2("#/f5pn") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "∞");
+    cy.get(cesc2("#/f5mn") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "−∞");
+  });
+
   it("evaluate at domain boundary, numeric", () => {
     cy.window().then(async (win) => {
       win.postMessage(
@@ -8559,28 +8627,28 @@ describe("Evaluate Tag Tests", function () {
       .eq(0)
       .invoke("text")
       .then((text) => {
-        expect(text.trim()).equal("NaN");
+        expect(text.trim()).equal("\uff3f");
       });
     cy.get(cesc("#\\/ga"))
       .find(".mjx-mrow")
       .eq(0)
       .invoke("text")
       .then((text) => {
-        expect(text.trim()).equal("NaN");
+        expect(text.trim()).equal("\uff3f");
       });
     cy.get(cesc("#\\/h"))
       .find(".mjx-mrow")
       .eq(0)
       .invoke("text")
       .then((text) => {
-        expect(text.trim()).equal("NaN+1");
+        expect(text.trim()).equal("\uff3f");
       });
     cy.get(cesc("#\\/ha"))
       .find(".mjx-mrow")
       .eq(0)
       .invoke("text")
       .then((text) => {
-        expect(text.trim()).equal("NaN+1");
+        expect(text.trim()).equal("\uff3f");
       });
     cy.get(cesc("#\\/pg"))
       .find(".mjx-mrow")

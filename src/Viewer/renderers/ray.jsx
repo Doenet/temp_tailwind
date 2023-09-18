@@ -1,19 +1,17 @@
 import React, { useContext, useEffect, useState, useRef } from "react";
-import useDoenetRender from "../useDoenetRenderer";
+import useDoenetRenderer from "../useDoenetRenderer";
 import { BoardContext, LINE_LAYER_OFFSET } from "./graph";
-import { useRecoilValue } from "recoil";
-import { darkModeAtom } from "../../Tools/_framework/DarkmodeController";
-// import me from 'math-expressions';
+import { PageContext } from "../PageViewer";
 
 export default React.memo(function Ray(props) {
   let { name, id, SVs, actions, sourceOfUpdate, callAction } =
-    useDoenetRender(props);
+    useDoenetRenderer(props);
 
   Ray.ignoreActionsWithoutCore = () => true;
 
   const board = useContext(BoardContext);
 
-  let rayJXG = useRef(null);
+  let rayJXG = useRef({});
 
   let pointerAtDown = useRef(null);
   let pointsAtDown = useRef(null);
@@ -34,7 +32,7 @@ export default React.memo(function Ray(props) {
   fixed.current = SVs.fixed;
   fixLocation.current = !SVs.draggable || SVs.fixLocation || SVs.fixed;
 
-  const darkMode = useRecoilValue(darkModeAtom);
+  const { darkMode } = useContext(PageContext) || {};
 
   useEffect(() => {
     //On unmount
@@ -61,7 +59,7 @@ export default React.memo(function Ray(props) {
       SVs.numericalEndpoint.length !== 2 ||
       SVs.numericalThroughpoint.length !== 2
     ) {
-      rayJXG.current = null;
+      rayJXG.current = {};
 
       return;
     }
@@ -275,11 +273,11 @@ export default React.memo(function Ray(props) {
     rayJXG.current.off("keyfocusout");
     rayJXG.current.off("keydown");
     board.removeObject(rayJXG.current);
-    rayJXG.current = null;
+    rayJXG.current = {};
   }
 
   if (board) {
-    if (rayJXG.current === null) {
+    if (Object.keys(rayJXG.current).length === 0) {
       createRayJXG();
     } else if (
       SVs.numericalEndpoint.length !== 2 ||

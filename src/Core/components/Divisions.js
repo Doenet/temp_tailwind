@@ -13,6 +13,8 @@ export class Div extends BlockComponent {
   static rendererType = "containerBlock";
   static renderChildren = true;
 
+  static canDisplayChildErrors = true;
+
   static includeBlankStringChildren = true;
 
   static returnChildGroups() {
@@ -24,7 +26,7 @@ export class Div extends BlockComponent {
     ];
   }
 
-  recordVisibilityChange({ isVisible, actionId }) {
+  recordVisibilityChange({ isVisible }) {
     this.coreFunctions.requestRecordEvent({
       verb: "visibilityChanged",
       object: {
@@ -33,7 +35,6 @@ export class Div extends BlockComponent {
       },
       result: { isVisible },
     });
-    this.coreFunctions.resolveAction({ actionId });
   }
 }
 
@@ -41,6 +42,8 @@ export class Span extends InlineComponent {
   static componentType = "span";
   static rendererType = "containerInline";
   static renderChildren = true;
+
+  static canDisplayChildErrors = true;
 
   static includeBlankStringChildren = true;
 

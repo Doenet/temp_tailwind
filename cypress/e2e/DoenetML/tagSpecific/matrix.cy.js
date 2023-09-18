@@ -1,4 +1,4 @@
-import { cesc } from "../../../../src/_utils/url";
+import { cesc, cesc2 } from "../../../../src/_utils/url";
 
 describe("Matrix Tag Tests", function () {
   beforeEach(() => {
@@ -1506,6 +1506,673 @@ describe("Matrix Tag Tests", function () {
       expect(stateVariables["/A7"].stateValues.matrix).eqls(matrixValue);
       expect(stateVariables["/A8"].stateValues.matrix).eqls(matrixValue);
     });
+  });
+
+  it("with string/math children get 1x1 matrix", () => {
+    cy.window().then(async (win) => {
+      win.postMessage(
+        {
+          doenetML: `
+    <text>a</text>
+    <p>A: <matrix name="A" >2<math>x</math></matrix></p>
+    <p>Copy 1: <matrix name="A1" copySource="A" /></p>
+    <p>Copy 2: <matrix name="A2" copySource="A.value" /></p>
+    <p>Copy 3: <copy source="A" assignNames="A3" /></p>
+    <p>Copy 4: <copy source="A.value" assignNames="A4" /></p>
+    <p>Copy 5: <matrix name="A5">$A</matrix></p>
+    <p>Copy 6: <matrix name="A6">$A.value</matrix></p>
+    <p>Copy 7: <matrix name="A7"><matrix copySource="A1" /></matrix></p>
+    <p>Copy 8: <matrix name="A8"><matrix copySource="A1.value" /></matrix></p>
+    <p>Modify: <matrixInput bindValueTo="$A" name="mi" /></p>
+    <p>Modify copy 1: <matrixInput bindValueTo="$A1" name="mi1" /></p>
+    <p>Modify copy 2: <matrixInput bindValueTo="$A2" name="mi2" /></p>
+    <p>Modify copy 3: <matrixInput bindValueTo="$A3" name="mi3" /></p>
+    <p>Modify copy 4: <matrixInput bindValueTo="$A4" name="mi4" /></p>
+    <p>Modify copy 5: <matrixInput bindValueTo="$A5" name="mi5" /></p>
+    <p>Modify copy 6: <matrixInput bindValueTo="$A6" name="mi6" /></p>
+    <p>Modify copy 7: <matrixInput bindValueTo="$A7" name="mi7" /></p>
+    <p>Modify copy 8: <matrixInput bindValueTo="$A8" name="mi8" /></p>
+    <p>Size: <numberList copySource="A.matrixSize" name="matrixSize" />, 
+      numRows: <integer copySource="A.numRows" name="numRows" />,
+      numColumns: <integer copySource="A.numColumns" name="numColumns" />
+    </p>
+    <p>Size 1: <numberList copySource="A1.matrixSize" name="matrixSize1" />, 
+      numRows 1: <integer copySource="A1.numRows" name="numRows1" />,
+      numColumns 1: <integer copySource="A1.numColumns" name="numColumns1" />
+    </p>
+    <p>Size 2: <numberList copySource="A2.matrixSize" name="matrixSize2" />, 
+      numRows 2: <integer copySource="A2.numRows" name="numRows2" />,
+      numColumns 2: <integer copySource="A2.numColumns" name="numColumns2" />
+    </p>
+    <p>Size 3: <numberList copySource="A3.matrixSize" name="matrixSize3" />, 
+      numRows 3: <integer copySource="A3.numRows" name="numRows3" />,
+      numColumns 3: <integer copySource="A3.numColumns" name="numColumns3" />
+    </p>
+    <p>Size 4: <numberList copySource="A4.matrixSize" name="matrixSize4" />, 
+      numRows 4: <integer copySource="A4.numRows" name="numRows4" />,
+      numColumns 4: <integer copySource="A4.numColumns" name="numColumns4" />
+    </p>
+    <p>Size 5: <numberList copySource="A5.matrixSize" name="matrixSize5" />, 
+      numRows 5: <integer copySource="A5.numRows" name="numRows5" />,
+      numColumns 5: <integer copySource="A5.numColumns" name="numColumns5" />
+    </p>
+    <p>Size 6: <numberList copySource="A6.matrixSize" name="matrixSize6" />, 
+      numRows 6: <integer copySource="A6.numRows" name="numRows6" />,
+      numColumns 6: <integer copySource="A6.numColumns" name="numColumns6" />
+    </p>
+    <p>Size 7: <numberList copySource="A7.matrixSize" name="matrixSize7" />, 
+      numRows 7: <integer copySource="A7.numRows" name="numRows7" />,
+      numColumns 7: <integer copySource="A7.numColumns" name="numColumns7" />
+    </p>
+    <p>Size 8: <numberList copySource="A8.matrixSize" name="matrixSize8" />, 
+      numRows 8: <integer copySource="A8.numRows" name="numRows8" />,
+      numColumns 8: <integer copySource="A8.numColumns" name="numColumns8" />
+    </p>
+    `,
+        },
+        "*",
+      );
+    });
+
+    cy.get(cesc("#\\/_text1")).should("have.text", "a"); // to wait until loaded
+
+    cy.get(cesc("#\\/A") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2x]");
+    cy.get(cesc("#\\/A1") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2x]");
+    cy.get(cesc("#\\/A2") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2x]");
+    cy.get(cesc("#\\/A3") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2x]");
+    cy.get(cesc("#\\/A4") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2x]");
+    cy.get(cesc("#\\/A5") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2x]");
+    cy.get(cesc("#\\/A6") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2x]");
+    cy.get(cesc("#\\/A7") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2x]");
+    cy.get(cesc("#\\/A8") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2x]");
+
+    cy.get(cesc("#\\/matrixSize")).should("have.text", "1, 1");
+    cy.get(cesc("#\\/matrixSize1")).should("have.text", "1, 1");
+    cy.get(cesc("#\\/matrixSize2")).should("have.text", "1, 1");
+    cy.get(cesc("#\\/matrixSize3")).should("have.text", "1, 1");
+    cy.get(cesc("#\\/matrixSize4")).should("have.text", "1, 1");
+    cy.get(cesc("#\\/matrixSize5")).should("have.text", "1, 1");
+    cy.get(cesc("#\\/matrixSize6")).should("have.text", "1, 1");
+    cy.get(cesc("#\\/matrixSize7")).should("have.text", "1, 1");
+    cy.get(cesc("#\\/matrixSize8")).should("have.text", "1, 1");
+
+    cy.get(cesc("#\\/numRows")).should("have.text", "1");
+    cy.get(cesc("#\\/numRows1")).should("have.text", "1");
+    cy.get(cesc("#\\/numRows2")).should("have.text", "1");
+    cy.get(cesc("#\\/numRows3")).should("have.text", "1");
+    cy.get(cesc("#\\/numRows4")).should("have.text", "1");
+    cy.get(cesc("#\\/numRows5")).should("have.text", "1");
+    cy.get(cesc("#\\/numRows6")).should("have.text", "1");
+    cy.get(cesc("#\\/numRows7")).should("have.text", "1");
+    cy.get(cesc("#\\/numRows8")).should("have.text", "1");
+
+    cy.get(cesc("#\\/numColumns")).should("have.text", "1");
+    cy.get(cesc("#\\/numColumns1")).should("have.text", "1");
+    cy.get(cesc("#\\/numColumns2")).should("have.text", "1");
+    cy.get(cesc("#\\/numColumns3")).should("have.text", "1");
+    cy.get(cesc("#\\/numColumns4")).should("have.text", "1");
+    cy.get(cesc("#\\/numColumns5")).should("have.text", "1");
+    cy.get(cesc("#\\/numColumns6")).should("have.text", "1");
+    cy.get(cesc("#\\/numColumns7")).should("have.text", "1");
+    cy.get(cesc("#\\/numColumns8")).should("have.text", "1");
+
+    cy.window().then(async (win) => {
+      let stateVariables = await win.returnAllStateVariables1();
+      let matrixAst = [
+        "matrix",
+        ["tuple", 1, 1],
+        ["tuple", ["tuple", ["*", 2, "x"]]],
+      ];
+      let matrixValue = [[["*", 2, "x"]]];
+      expect(stateVariables["/A"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A1"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A2"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A3"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A4"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A5"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A6"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A7"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A8"].stateValues.value).eqls(matrixAst);
+
+      expect(stateVariables["/mi"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi1"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi2"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi3"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi4"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi5"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi6"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi7"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi8"].stateValues.value).eqls(matrixAst);
+
+      expect(stateVariables["/A"].stateValues.matrixSize).eqls([1, 1]);
+      expect(stateVariables["/A"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A1"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A2"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A3"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A4"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A5"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A6"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A7"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A8"].stateValues.matrix).eqls(matrixValue);
+    });
+
+    cy.log("change value");
+
+    cy.get(cesc("#\\/mi_component_0_0") + " textarea")
+      .type("{end}{backspace}y{enter}", { force: true })
+      .blur();
+
+    cy.get(cesc("#\\/A") + " .mjx-mrow").should("contain.text", "[2y]");
+
+    cy.get(cesc("#\\/A") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2y]");
+    cy.get(cesc("#\\/A1") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2y]");
+    cy.get(cesc("#\\/A2") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2y]");
+    cy.get(cesc("#\\/A3") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2y]");
+    cy.get(cesc("#\\/A4") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2y]");
+    cy.get(cesc("#\\/A5") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2y]");
+    cy.get(cesc("#\\/A6") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2y]");
+    cy.get(cesc("#\\/A7") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2y]");
+    cy.get(cesc("#\\/A8") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2y]");
+
+    cy.window().then(async (win) => {
+      let stateVariables = await win.returnAllStateVariables1();
+      let matrixAst = [
+        "matrix",
+        ["tuple", 1, 1],
+        ["tuple", ["tuple", ["*", 2, "y"]]],
+      ];
+      let matrixValue = [[["*", 2, "y"]]];
+      expect(stateVariables["/A"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A1"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A2"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A3"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A4"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A5"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A6"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A7"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A8"].stateValues.value).eqls(matrixAst);
+
+      expect(stateVariables["/mi"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi1"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi2"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi3"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi4"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi5"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi6"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi7"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi8"].stateValues.value).eqls(matrixAst);
+
+      expect(stateVariables["/A"].stateValues.matrixSize).eqls([1, 1]);
+      expect(stateVariables["/A"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A1"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A2"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A3"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A4"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A5"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A6"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A7"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A8"].stateValues.matrix).eqls(matrixValue);
+    });
+
+    cy.log("cannot add rows or columns");
+
+    cy.get(cesc("#\\/mi_rowIncrement")).click();
+    cy.get(cesc("#\\/mi_columnIncrement")).click();
+
+    cy.log("change value so know that core has responded");
+    cy.get(cesc("#\\/mi3_component_0_0") + " textarea")
+      .type("{end}{backspace}z{enter}", { force: true })
+      .blur();
+
+    cy.get(cesc("#\\/A") + " .mjx-mrow").should("contain.text", "[2z]");
+
+    cy.get(cesc("#\\/A") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2z]");
+    cy.get(cesc("#\\/A1") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2z]");
+    cy.get(cesc("#\\/A2") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2z]");
+    cy.get(cesc("#\\/A3") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2z]");
+    cy.get(cesc("#\\/A4") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2z]");
+    cy.get(cesc("#\\/A5") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2z]");
+    cy.get(cesc("#\\/A6") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2z]");
+    cy.get(cesc("#\\/A7") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2z]");
+    cy.get(cesc("#\\/A8") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[2z]");
+
+    cy.get(cesc("#\\/matrixSize")).should("have.text", "1, 1");
+    cy.get(cesc("#\\/matrixSize1")).should("have.text", "1, 1");
+    cy.get(cesc("#\\/matrixSize2")).should("have.text", "1, 1");
+    cy.get(cesc("#\\/matrixSize3")).should("have.text", "1, 1");
+    cy.get(cesc("#\\/matrixSize4")).should("have.text", "1, 1");
+    cy.get(cesc("#\\/matrixSize5")).should("have.text", "1, 1");
+    cy.get(cesc("#\\/matrixSize6")).should("have.text", "1, 1");
+    cy.get(cesc("#\\/matrixSize7")).should("have.text", "1, 1");
+    cy.get(cesc("#\\/matrixSize8")).should("have.text", "1, 1");
+
+    cy.get(cesc("#\\/numRows")).should("have.text", "1");
+    cy.get(cesc("#\\/numRows1")).should("have.text", "1");
+    cy.get(cesc("#\\/numRows2")).should("have.text", "1");
+    cy.get(cesc("#\\/numRows3")).should("have.text", "1");
+    cy.get(cesc("#\\/numRows4")).should("have.text", "1");
+    cy.get(cesc("#\\/numRows5")).should("have.text", "1");
+    cy.get(cesc("#\\/numRows6")).should("have.text", "1");
+    cy.get(cesc("#\\/numRows7")).should("have.text", "1");
+    cy.get(cesc("#\\/numRows8")).should("have.text", "1");
+
+    cy.get(cesc("#\\/numColumns")).should("have.text", "1");
+    cy.get(cesc("#\\/numColumns1")).should("have.text", "1");
+    cy.get(cesc("#\\/numColumns2")).should("have.text", "1");
+    cy.get(cesc("#\\/numColumns3")).should("have.text", "1");
+    cy.get(cesc("#\\/numColumns4")).should("have.text", "1");
+    cy.get(cesc("#\\/numColumns5")).should("have.text", "1");
+    cy.get(cesc("#\\/numColumns6")).should("have.text", "1");
+    cy.get(cesc("#\\/numColumns7")).should("have.text", "1");
+    cy.get(cesc("#\\/numColumns8")).should("have.text", "1");
+
+    cy.window().then(async (win) => {
+      let stateVariables = await win.returnAllStateVariables1();
+      let matrixAst = [
+        "matrix",
+        ["tuple", 1, 1],
+        ["tuple", ["tuple", ["*", 2, "z"]]],
+      ];
+      let matrixValue = [[["*", 2, "z"]]];
+      expect(stateVariables["/A"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A1"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A2"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A3"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A4"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A5"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A6"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A7"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/A8"].stateValues.value).eqls(matrixAst);
+
+      expect(stateVariables["/mi"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi1"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi2"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi3"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi4"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi5"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi6"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi7"].stateValues.value).eqls(matrixAst);
+      expect(stateVariables["/mi8"].stateValues.value).eqls(matrixAst);
+
+      expect(stateVariables["/A"].stateValues.matrixSize).eqls([1, 1]);
+      expect(stateVariables["/A"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A1"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A2"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A3"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A4"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A5"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A6"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A7"].stateValues.matrix).eqls(matrixValue);
+      expect(stateVariables["/A8"].stateValues.matrix).eqls(matrixValue);
+    });
+  });
+
+  it("functionSymbols", () => {
+    cy.window().then(async (win) => {
+      win.postMessage(
+        {
+          doenetML: `
+    <p><matrix name="Adef">
+      <row>f(x) g(x)</row>
+      <row>h(x) a(x)</row>
+    </matrix>
+    </p>
+    <p><matrix name="Ah" functionSymbols="h">
+      <row>f(x) g(x)</row>
+      <row>h(x) a(x)</row>
+    </matrix>
+    </p>
+    <p><matrix name="Amixedbyrow" functionSymbols="h a">
+      <row><math functionSymbols="g">h(x)</math> <math functionSymbols="g">g(x)</math> a(x)</row>
+      <row functionSymbols="h">h(x) a(x) <math functionSymbols="b">b(x)</math></row>
+    </matrix>
+    </p>
+    <p><matrix name="Amixedbycolumn" functionSymbols="h a">
+      <column><math functionSymbols="g">h(x)</math> <math functionSymbols="g">g(x)</math> a(x)</column>
+      <column functionSymbols="h">h(x) a(x) <math functionSymbols="b">b(x)</math></column>
+    </matrix>
+    </p>
+    `,
+        },
+        "*",
+      );
+    });
+
+    cy.get(cesc2("#/Adef") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[f(x)g(x)hxax]");
+    cy.get(cesc2("#/Ah") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[fxgxh(x)ax]");
+    cy.get(cesc2("#/Amixedbyrow") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[hxg(x)a(x)h(x)axb(x)]");
+    cy.get(cesc2("#/Amixedbycolumn") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "⎡⎢⎣hxh(x)g(x)axa(x)b(x)⎤⎥⎦");
+
+    cy.window().then(async (win) => {
+      let stateVariables = await win.returnAllStateVariables1();
+      let matrixdefAst = [
+        "matrix",
+        ["tuple", 2, 2],
+        [
+          "tuple",
+          ["tuple", ["apply", "f", "x"], ["apply", "g", "x"]],
+          ["tuple", ["*", "h", "x"], ["*", "a", "x"]],
+        ],
+      ];
+      let matrixhAst = [
+        "matrix",
+        ["tuple", 2, 2],
+        [
+          "tuple",
+          ["tuple", ["*", "f", "x"], ["*", "g", "x"]],
+          ["tuple", ["apply", "h", "x"], ["*", "a", "x"]],
+        ],
+      ];
+      let matrixmixedbyrowAst = [
+        "matrix",
+        ["tuple", 2, 3],
+        [
+          "tuple",
+          ["tuple", ["*", "h", "x"], ["apply", "g", "x"], ["apply", "a", "x"]],
+          ["tuple", ["apply", "h", "x"], ["*", "a", "x"], ["apply", "b", "x"]],
+        ],
+      ];
+      let matrixmixedbycolumnAst = [
+        "matrix",
+        ["tuple", 3, 2],
+        [
+          "tuple",
+          ["tuple", ["*", "h", "x"], ["apply", "h", "x"]],
+          ["tuple", ["apply", "g", "x"], ["*", "a", "x"]],
+          ["tuple", ["apply", "a", "x"], ["apply", "b", "x"]],
+        ],
+      ];
+      expect(stateVariables["/Adef"].stateValues.value).eqls(matrixdefAst);
+      expect(stateVariables["/Ah"].stateValues.value).eqls(matrixhAst);
+      expect(stateVariables["/Amixedbyrow"].stateValues.value).eqls(
+        matrixmixedbyrowAst,
+      );
+      expect(stateVariables["/Amixedbycolumn"].stateValues.value).eqls(
+        matrixmixedbycolumnAst,
+      );
+    });
+  });
+
+  it("sourcesAreFunctionSymbols", () => {
+    cy.window().then(async (win) => {
+      win.postMessage(
+        {
+          doenetML: `
+    <setup>
+      <math name="fun1">f</math>
+      <math name="fun2">g</math>
+      <math name="fun3">h</math>
+      <math name="fun4">a</math>
+      <math name="fun5">b</math>
+    </setup>
+    <p><matrix name="Adef">
+      <row>$fun1(x) $fun2(x)</row>
+      <row>$fun3(x) $fun4(x)</row>
+    </matrix>
+    </p>
+    <p><matrix name="Ah" sourcesAreFunctionSymbols="fun1 fun4">
+      <row>$fun1(x) $fun2(x)</row>
+      <row>$fun3(x) $fun4(x)</row>
+    </matrix>
+    </p>
+    <p><matrix name="Amixedbyrow" sourcesAreFunctionSymbols="fun3 fun4">
+      <row><math sourcesAreFunctionSymbols="fun2">$fun3(x)</math> <math sourcesAreFunctionSymbols="fun2">$fun2(x)</math> $fun4(x)</row>
+      <row sourcesAreFunctionSymbols="fun3">$fun3(x) $fun4(x) <math sourcesAreFunctionSymbols="fun5">$fun5(x)</math></row>
+    </matrix>
+    </p>
+    <p><matrix name="Amixedbycolumn" sourcesAreFunctionSymbols="fun3 fun4">
+      <column><math sourcesAreFunctionSymbols="fun2">h(x)</math> <math sourcesAreFunctionSymbols="fun2">$fun2(x)</math> $fun4(x)</column>
+      <column sourcesAreFunctionSymbols="fun3">$fun3(x) $fun4(x) <math sourcesAreFunctionSymbols="fun5">$fun5(x)</math></column>
+    </matrix>
+    </p>
+    `,
+        },
+        "*",
+      );
+    });
+
+    cy.get(cesc2("#/Adef") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[fxgxhxax]");
+    cy.get(cesc2("#/Ah") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[f(x)gxhxa(x)]");
+    cy.get(cesc2("#/Amixedbyrow") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[hxg(x)a(x)h(x)axb(x)]");
+    cy.get(cesc2("#/Amixedbycolumn") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "⎡⎢⎣hxh(x)g(x)axa(x)b(x)⎤⎥⎦");
+
+    cy.window().then(async (win) => {
+      let stateVariables = await win.returnAllStateVariables1();
+      let matrixdefAst = [
+        "matrix",
+        ["tuple", 2, 2],
+        [
+          "tuple",
+          ["tuple", ["*", "f", "x"], ["*", "g", "x"]],
+          ["tuple", ["*", "h", "x"], ["*", "a", "x"]],
+        ],
+      ];
+      let matrixhAst = [
+        "matrix",
+        ["tuple", 2, 2],
+        [
+          "tuple",
+          ["tuple", ["apply", "f", "x"], ["*", "g", "x"]],
+          ["tuple", ["*", "h", "x"], ["apply", "a", "x"]],
+        ],
+      ];
+      let matrixmixedbyrowAst = [
+        "matrix",
+        ["tuple", 2, 3],
+        [
+          "tuple",
+          ["tuple", ["*", "h", "x"], ["apply", "g", "x"], ["apply", "a", "x"]],
+          ["tuple", ["apply", "h", "x"], ["*", "a", "x"], ["apply", "b", "x"]],
+        ],
+      ];
+      let matrixmixedbycolumnAst = [
+        "matrix",
+        ["tuple", 3, 2],
+        [
+          "tuple",
+          ["tuple", ["*", "h", "x"], ["apply", "h", "x"]],
+          ["tuple", ["apply", "g", "x"], ["*", "a", "x"]],
+          ["tuple", ["apply", "a", "x"], ["apply", "b", "x"]],
+        ],
+      ];
+      expect(stateVariables["/Adef"].stateValues.value).eqls(matrixdefAst);
+      expect(stateVariables["/Ah"].stateValues.value).eqls(matrixhAst);
+      expect(stateVariables["/Amixedbyrow"].stateValues.value).eqls(
+        matrixmixedbyrowAst,
+      );
+      expect(stateVariables["/Amixedbycolumn"].stateValues.value).eqls(
+        matrixmixedbycolumnAst,
+      );
+    });
+  });
+
+  it("splitsymbols", () => {
+    cy.window().then(async (win) => {
+      win.postMessage(
+        {
+          doenetML: `
+    <p><matrix name="Adef">
+      <row>xy yz</row>
+      <row>ab bc</row>
+    </matrix>
+    </p>
+    <p><matrix name="Ah" splitSymbols="false">
+    <row>xy yz</row>
+    <row>ab bc</row>
+    </matrix>
+    </p>
+    <p><matrix name="Amixedbyrow" splitSymbols="false">
+      <row>xy <math splitSymbols>yz</math> <math>zx</math></row>
+      <row splitSymbols>ab <math splitSymbols="false">bc</math> <math>ca</math></row>
+    </matrix>
+    </p>
+    <p><matrix name="Amixedbycolumn" splitSymbols="false">
+    <column>xy <math splitSymbols>yz</math> <math>zx</math></column>
+    <column splitSymbols>ab <math splitSymbols="false">bc</math> <math>ca</math></column>
+    </matrix>
+    </p>
+    `,
+        },
+        "*",
+      );
+    });
+
+    cy.get(cesc2("#/Adef") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[xyyzabbc]");
+    cy.get(cesc2("#/Ah") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[xyyzabbc]");
+    cy.get(cesc2("#/Amixedbyrow") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[xyyzzxabbcca]");
+    cy.get(cesc2("#/Amixedbycolumn") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "⎡⎢⎣xyabyzbczxca⎤⎥⎦");
+
+    cy.window().then(async (win) => {
+      let stateVariables = await win.returnAllStateVariables1();
+      let matrixdefAst = [
+        "matrix",
+        ["tuple", 2, 2],
+        [
+          "tuple",
+          ["tuple", ["*", "x", "y"], ["*", "y", "z"]],
+          ["tuple", ["*", "a", "b"], ["*", "b", "c"]],
+        ],
+      ];
+      let matrixnAst = [
+        "matrix",
+        ["tuple", 2, 2],
+        ["tuple", ["tuple", "xy", "yz"], ["tuple", "ab", "bc"]],
+      ];
+      let matrixmixedbyrowAst = [
+        "matrix",
+        ["tuple", 2, 3],
+        [
+          "tuple",
+          ["tuple", "xy", ["*", "y", "z"], "zx"],
+          ["tuple", ["*", "a", "b"], "bc", ["*", "c", "a"]],
+        ],
+      ];
+      let matrixmixedbycolumnAst = [
+        "matrix",
+        ["tuple", 3, 2],
+        [
+          "tuple",
+          ["tuple", "xy", ["*", "a", "b"]],
+          ["tuple", ["*", "y", "z"], "bc"],
+          ["tuple", "zx", ["*", "c", "a"]],
+        ],
+      ];
+      expect(stateVariables["/Adef"].stateValues.value).eqls(matrixdefAst);
+      expect(stateVariables["/Ah"].stateValues.value).eqls(matrixnAst);
+      expect(stateVariables["/Amixedbyrow"].stateValues.value).eqls(
+        matrixmixedbyrowAst,
+      );
+      expect(stateVariables["/Amixedbycolumn"].stateValues.value).eqls(
+        matrixmixedbycolumnAst,
+      );
+    });
+  });
+
+  it("displayBlanks", () => {
+    cy.window().then(async (win) => {
+      win.postMessage(
+        {
+          doenetML: `
+    <p><matrix name="Adef">
+      <row>x_ y_</row>
+      <row>a_ b_</row>
+    </matrix>
+    </p>
+    <p><matrix name="Ah" displayBlanks="false">
+    <row>x_ y_</row>
+    <row>a_ b_</row>
+    </matrix>
+    </p>
+    `,
+        },
+        "*",
+      );
+    });
+
+    cy.get(cesc2("#/Adef") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[x＿y＿a＿b＿]");
+    cy.get(cesc2("#/Ah") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "[xyab]");
   });
 
   it("2x3 matrix by rows", () => {

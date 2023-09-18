@@ -1,5 +1,6 @@
 import Input from "./abstract/Input";
 import { deepCompare } from "../utils/deepFunctions";
+import me from "math-expressions";
 import {
   enumerateCombinations,
   enumeratePermutations,
@@ -213,6 +214,7 @@ export default class Choiceinput extends Input {
       }),
       definition: function ({ dependencyValues }) {
         let numChoices = dependencyValues.choiceChildren.length;
+        let warnings = [];
         let choiceOrder;
         if (!dependencyValues.shuffleOrder) {
           choiceOrder = [...Array(numChoices).keys()].map((x) => x + 1);
@@ -222,9 +224,11 @@ export default class Choiceinput extends Input {
             dependencyValues.variants?.desiredVariant?.indices;
           if (desiredChoiceOrder !== undefined) {
             if (desiredChoiceOrder.length !== numChoices) {
-              console.warn(
-                "Ignoring indices specified for choiceInput as number of indices doesn't match number of choice children.",
-              );
+              warnings.push({
+                message:
+                  "Ignoring indices specified for choiceInput as number of indices doesn't match number of choice children.",
+                level: 2,
+              });
             } else {
               desiredChoiceOrder = desiredChoiceOrder.map(Number);
               if (!desiredChoiceOrder.every(Number.isInteger)) {
@@ -233,9 +237,11 @@ export default class Choiceinput extends Input {
                 );
               }
               if (!desiredChoiceOrder.every((x) => x >= 1 && x <= numChoices)) {
-                console.warn(
-                  "Ignoring indices specified for choiceInput as some indices out of range.",
-                );
+                warnings.push({
+                  message:
+                    "Ignoring indices specified for choiceInput as some indices out of range.",
+                  level: 2,
+                });
               } else {
                 return {
                   setValue: {
@@ -259,7 +265,7 @@ export default class Choiceinput extends Input {
             [choiceOrder[i], choiceOrder[j]] = [choiceOrder[j], choiceOrder[i]];
           }
         }
-        return { setValue: { choiceOrder } };
+        return { setValue: { choiceOrder }, sendWarnings: warnings };
       },
     };
 
@@ -802,6 +808,8 @@ export default class Choiceinput extends Input {
         createComponentOfType: "number",
       },
       isArray: true,
+      allowExtraArrayKeysInInverse: true,
+      doNotCombineInverseArrayInstructions: true,
       entryPrefixes: ["selectedIndex"],
       forRenderer: true,
       returnArraySizeDependencies: () => ({
@@ -830,6 +838,62 @@ export default class Choiceinput extends Input {
         }
         return { setValue: { selectedIndices } };
       },
+      async inverseArrayDefinitionByKey({
+        desiredStateVariableValues,
+        globalDependencyValues,
+        stateValues,
+      }) {
+        let selectMultiple = await stateValues.selectMultiple;
+        let numChoices = await stateValues.numChoices;
+
+        let desiredIndices = {};
+        for (let key in desiredStateVariableValues.selectedIndices) {
+          let newInd = desiredStateVariableValues.selectedIndices[key];
+          if (newInd instanceof me.class) {
+            newInd = newInd.evaluate_to_constant();
+          }
+          if (Number.isInteger(newInd) && newInd >= 1 && newInd <= numChoices) {
+            desiredIndices[key] = newInd;
+          }
+        }
+
+        let newSelectedIndices = [];
+        if (selectMultiple) {
+          if (!Array.isArray(desiredStateVariableValues.selectedIndices)) {
+            newSelectedIndices = [...globalDependencyValues.allSelectedIndices];
+          }
+
+          for (let key in desiredIndices) {
+            newSelectedIndices[key] = desiredIndices[key];
+          }
+          newSelectedIndices = newSelectedIndices.reduce((a, c) => {
+            if (c !== undefined && !a.includes(c)) {
+              return [...a, c];
+            } else {
+              return a;
+            }
+          }, []);
+
+          // sort
+          newSelectedIndices.sort((a, b) => a - b);
+        } else {
+          if (desiredIndices[0] !== undefined) {
+            newSelectedIndices = [desiredIndices[0]];
+          } else {
+            newSelectedIndices = [];
+          }
+        }
+
+        return {
+          success: true,
+          instructions: [
+            {
+              setDependency: "allSelectedIndices",
+              desiredValue: newSelectedIndices,
+            },
+          ],
+        };
+      },
     };
 
     stateVariableDefinitions.selectedIndex = {
@@ -843,6 +907,7 @@ export default class Choiceinput extends Input {
         hasVariableComponentType: true,
       },
       isArray: true,
+      allowExtraArrayKeysInInverse: true,
       entryPrefixes: ["selectedValue"],
       returnArraySizeDependencies: () => ({
         numSelectedIndices: {
@@ -897,6 +962,93 @@ export default class Choiceinput extends Input {
           setValue: { selectedValues },
           setCreateComponentOfType: { selectedValues: componentType },
         };
+      },
+      async inverseArrayDefinitionByKey({
+        desiredStateVariableValues,
+        globalDependencyValues,
+        stateValues,
+      }) {
+        let selectMultiple = await stateValues.selectMultiple;
+
+        let componentType = globalDependencyValues.componentType;
+
+        if (selectMultiple) {
+          let newSelectedIndices = [...globalDependencyValues.selectedIndices];
+
+          let foundValue = false;
+          for (let key in desiredStateVariableValues.selectedValues) {
+            let desiredVal = desiredStateVariableValues.selectedValues[key];
+            let ind = getIndOfDesiredValue(desiredVal);
+            if (ind !== -1) {
+              newSelectedIndices[key] = ind + 1; // 1-indexed
+              foundValue = true;
+            }
+          }
+
+          if (foundValue) {
+            // deduplicate, remove undefined,
+            newSelectedIndices = newSelectedIndices.reduce((a, c) => {
+              if (c !== undefined && !a.includes(c)) {
+                return [...a, c];
+              } else {
+                return a;
+              }
+            }, []);
+
+            // sort
+            newSelectedIndices.sort((a, b) => a - b);
+
+            return {
+              success: true,
+              instructions: [
+                {
+                  setDependency: "selectedIndices",
+                  desiredValue: newSelectedIndices,
+                },
+              ],
+            };
+          }
+        } else {
+          let desiredVal = desiredStateVariableValues.selectedValues[0];
+          let ind = getIndOfDesiredValue(desiredVal);
+
+          if (ind !== -1) {
+            return {
+              success: true,
+              instructions: [
+                {
+                  setDependency: "selectedIndices",
+                  desiredValue: [ind + 1],
+                },
+              ],
+            };
+          }
+        }
+
+        return { success: false };
+
+        function getIndOfDesiredValue(desiredVal) {
+          let ind = -1;
+
+          if (componentType === "math") {
+            if (desiredVal instanceof me.class) {
+              for (let [
+                ind2,
+                val,
+              ] of globalDependencyValues.choiceMaths.entries()) {
+                if (val.equals(desiredVal)) {
+                  ind = ind2;
+                  break;
+                }
+              }
+            }
+          } else {
+            ind = globalDependencyValues.choiceTexts.indexOf(
+              desiredVal?.toLowerCase().trim(),
+            );
+          }
+          return ind;
+        }
       },
     };
 
@@ -1225,8 +1377,6 @@ export default class Choiceinput extends Input {
         sourceInformation,
         skipRendererUpdate,
       });
-    } else {
-      this.coreFunctions.resolveAction({ actionId });
     }
   }
 
@@ -1296,19 +1446,18 @@ export default class Choiceinput extends Input {
       return { success: false };
     }
 
-    let numberOfVariants = result.numberOfVariants * numberOfPermutations;
+    let numVariants = result.numVariants * numberOfPermutations;
 
     // adjust variants info added by call to super
-    serializedComponent.variants.numberOfVariants = numberOfVariants;
+    serializedComponent.variants.numVariants = numVariants;
     serializedComponent.variants.uniqueVariantData = {
-      numberOfVariantsByDescendant:
-        serializedComponent.variants.uniqueVariantData
-          .numberOfVariantsByDescendant,
+      numVariantsByDescendant:
+        serializedComponent.variants.uniqueVariantData.numVariantsByDescendant,
       numberOfPermutations,
       numChoices,
     };
 
-    return { success: true, numberOfVariants };
+    return { success: true, numVariants };
   }
 
   static getUniqueVariant({
@@ -1316,15 +1465,15 @@ export default class Choiceinput extends Input {
     variantIndex,
     componentInfoObjects,
   }) {
-    let numberOfVariants = serializedComponent.variants?.numberOfVariants;
-    if (numberOfVariants === undefined) {
+    let numVariants = serializedComponent.variants?.numVariants;
+    if (numVariants === undefined) {
       return { success: false };
     }
 
     if (
       !Number.isInteger(variantIndex) ||
       variantIndex < 1 ||
-      variantIndex > numberOfVariants
+      variantIndex > numVariants
     ) {
       return { success: false };
     }
@@ -1337,9 +1486,8 @@ export default class Choiceinput extends Input {
       });
     }
 
-    let numberOfVariantsByDescendant =
-      serializedComponent.variants.uniqueVariantData
-        .numberOfVariantsByDescendant;
+    let numVariantsByDescendant =
+      serializedComponent.variants.uniqueVariantData.numVariantsByDescendant;
     let descendantVariantComponents =
       serializedComponent.variants.descendantVariantComponents;
     let numberOfPermutations =
@@ -1347,7 +1495,7 @@ export default class Choiceinput extends Input {
     let numChoices = serializedComponent.variants.uniqueVariantData.numChoices;
 
     // treat permutations as another descendant variant component
-    let numbersOfOptions = [...numberOfVariantsByDescendant];
+    let numbersOfOptions = [...numVariantsByDescendant];
     numbersOfOptions.push(numberOfPermutations);
 
     let indicesForEachOption = enumerateCombinations({
@@ -1375,10 +1523,10 @@ export default class Choiceinput extends Input {
 
     for (
       let descendantNum = 0;
-      descendantNum < numberOfVariantsByDescendant.length;
+      descendantNum < numVariantsByDescendant.length;
       descendantNum++
     ) {
-      if (numberOfVariantsByDescendant[descendantNum] > 1) {
+      if (numVariantsByDescendant[descendantNum] > 1) {
         let descendant = descendantVariantComponents[descendantNum];
         let compClass =
           componentInfoObjects.allComponentClasses[descendant.componentType];

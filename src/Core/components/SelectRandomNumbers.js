@@ -7,6 +7,8 @@ import SampleRandomNumbers from "./SampleRandomNumbers";
 export default class SelectRandomNumbers extends SampleRandomNumbers {
   static componentType = "selectRandomNumbers";
 
+  static allowInSchemaAsComponent = ["number"];
+
   static createsVariants = true;
 
   static createAttributesObject() {
@@ -76,6 +78,10 @@ export default class SelectRandomNumbers extends SampleRandomNumbers {
         step: {
           dependencyType: "stateVariable",
           variableName: "step",
+        },
+        exclude: {
+          dependencyType: "stateVariable",
+          variableName: "exclude",
         },
         numDiscreteValues: {
           dependencyType: "stateVariable",
@@ -178,6 +184,9 @@ export default class SelectRandomNumbers extends SampleRandomNumbers {
     componentInfoObjects,
     flags,
   }) {
+    let errors = [];
+    let warnings = [];
+
     let newNamespace = component.attributes.newNamespace?.primitive;
 
     let attributesToConvert = {};
@@ -216,8 +225,14 @@ export default class SelectRandomNumbers extends SampleRandomNumbers {
       parentCreatesNewNamespace: newNamespace,
       componentInfoObjects,
     });
+    errors.push(...processResult.errors);
+    warnings.push(...processResult.warnings);
 
-    return { replacements: processResult.serializedComponents };
+    return {
+      replacements: processResult.serializedComponents,
+      errors,
+      warnings,
+    };
   }
 }
 

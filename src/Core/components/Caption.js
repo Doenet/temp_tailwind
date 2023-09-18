@@ -10,6 +10,7 @@ export default class Caption extends BlockComponent {
   }
   static componentType = "caption";
   static rendererType = "containerInline";
+  static canDisplayChildErrors = true;
 
   static renderChildren = true;
 
@@ -20,6 +21,10 @@ export default class Caption extends BlockComponent {
       {
         group: "inlinesBlocks",
         componentTypes: ["_inline", "_block"],
+      },
+      {
+        group: "errors",
+        componentTypes: ["_error"],
       },
     ];
   }
@@ -59,7 +64,7 @@ export default class Caption extends BlockComponent {
     return stateVariableDefinitions;
   }
 
-  recordVisibilityChange({ isVisible, actionId }) {
+  recordVisibilityChange({ isVisible }) {
     this.coreFunctions.requestRecordEvent({
       verb: "visibilityChanged",
       object: {
@@ -68,6 +73,5 @@ export default class Caption extends BlockComponent {
       },
       result: { isVisible },
     });
-    this.coreFunctions.resolveAction({ actionId });
   }
 }

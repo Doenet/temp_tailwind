@@ -53,14 +53,13 @@ export default class Graph extends BlockComponent {
     };
     attributes.size = {
       createComponentOfType: "text",
+      createStateVariable: "specifiedSize",
+      defaultValue: "medium",
+      toLowerCase: true,
+      validValues: sizePossibilities,
     };
     attributes.aspectRatio = {
       createComponentOfType: "number",
-    };
-
-    // Note: height attribute is deprecated and will be removed in the future
-    attributes.height = {
-      createComponentOfType: "_componentSize",
     };
 
     attributes.displayMode = {
@@ -230,6 +229,7 @@ export default class Graph extends BlockComponent {
         group: "childrenThatShouldNotBeHere",
         componentTypes: ["_base"],
         matchAfterAdapters: true,
+        excludeFromSchema: true,
       },
     ];
   }
@@ -475,10 +475,9 @@ export default class Graph extends BlockComponent {
         createComponentOfType: "text",
       },
       returnDependencies: () => ({
-        sizeAttr: {
-          dependencyType: "attributeComponent",
-          attributeName: "size",
-          variableNames: ["value"],
+        specifiedSize: {
+          dependencyType: "stateVariable",
+          variableName: "specifiedSize",
         },
         widthAttr: {
           dependencyType: "attributeComponent",
@@ -486,17 +485,12 @@ export default class Graph extends BlockComponent {
           variableNames: ["componentSize"],
         },
       }),
-      definition({ dependencyValues }) {
+      definition({ dependencyValues, usedDefault }) {
         const defaultSize = "medium";
 
-        if (dependencyValues.sizeAttr) {
-          let size = dependencyValues.sizeAttr.stateValues.value.toLowerCase();
-
-          if (!sizePossibilities.includes(size)) {
-            size = defaultSize;
-          }
+        if (!usedDefault.specifiedSize) {
           return {
-            setValue: { size },
+            setValue: { size: dependencyValues.specifiedSize },
           };
         } else if (dependencyValues.widthAttr) {
           let componentSize =
@@ -576,19 +570,8 @@ export default class Graph extends BlockComponent {
           dependencyType: "stateVariable",
           variableName: "identicalAxisScales",
         },
-        heightAttr: {
-          dependencyType: "attributeComponent",
-          attributeName: "height",
-          variableNames: ["componentSize"],
-        },
       }),
       definition({ dependencyValues }) {
-        if (dependencyValues.heightAttr !== null) {
-          console.warn(
-            "Height attribute of graph is deprecated and is being ignored.  Use aspectRatio attribute instead.",
-          );
-        }
-
         let aspectRatioFromAxisScales =
           dependencyValues.identicalAxisScales &&
           dependencyValues.aspectRatioAttr === null;
@@ -1621,8 +1604,6 @@ export default class Graph extends BlockComponent {
         sourceInformation,
         skipRendererUpdate,
       });
-    } else {
-      this.coreFunctions.resolveAction({ actionId });
     }
   }
 
@@ -1660,12 +1641,10 @@ export default class Graph extends BlockComponent {
         sourceInformation,
         skipRendererUpdate,
       });
-    } else {
-      this.coreFunctions.resolveAction({ actionId });
     }
   }
 
-  recordVisibilityChange({ isVisible, actionId }) {
+  recordVisibilityChange({ isVisible }) {
     this.coreFunctions.requestRecordEvent({
       verb: "visibilityChanged",
       object: {
@@ -1674,6 +1653,5 @@ export default class Graph extends BlockComponent {
       },
       result: { isVisible },
     });
-    this.coreFunctions.resolveAction({ actionId });
   }
 }

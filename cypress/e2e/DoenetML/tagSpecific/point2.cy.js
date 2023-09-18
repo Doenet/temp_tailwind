@@ -9414,6 +9414,71 @@ describe("Point Tag Tests 2", function () {
     });
   });
 
+  it("warnings from attractTo and constrainTo", () => {
+    cy.window().then(async (win) => {
+      win.postMessage(
+        {
+          doenetML: `
+<text>a</text>
+<graph name="g">
+  <legend name="lg"><label>point</label></legend>
+  <point>
+    <constraints>
+      <attractTo>$lg</attractTo>
+    </constraints>
+  </point>
+</graph>
+
+<graph copySource="g">
+  <point>(3,4)
+    <constraints>
+      <constrainTo>$lg</constrainTo>
+    </constraints>
+  </point>
+</graph>
+    `,
+        },
+        "*",
+      );
+    });
+
+    cy.get(cesc("#\\/_text1")).should("have.text", "a"); //wait for page to load
+
+    cy.window().then(async (win) => {
+      let errorWarnings = await win.returnErrorWarnings1();
+
+      expect(errorWarnings.errors.length).eq(0);
+      expect(errorWarnings.warnings.length).eq(3);
+
+      expect(errorWarnings.warnings[0].message).contain(
+        "Cannot attract to a <legend> as it doesn't have a nearestPoint state variable",
+      );
+      expect(errorWarnings.warnings[0].level).eq(1);
+      expect(errorWarnings.warnings[0].doenetMLrange.lineBegin).eq(7);
+      expect(errorWarnings.warnings[0].doenetMLrange.charBegin).eq(7);
+      expect(errorWarnings.warnings[0].doenetMLrange.lineEnd).eq(7);
+      expect(errorWarnings.warnings[0].doenetMLrange.charEnd).eq(32);
+
+      expect(errorWarnings.warnings[1].message).contain(
+        "Cannot attract to a <legend> as it doesn't have a nearestPoint state variable",
+      );
+      expect(errorWarnings.warnings[1].level).eq(1);
+      expect(errorWarnings.warnings[1].doenetMLrange.lineBegin).eq(7);
+      expect(errorWarnings.warnings[1].doenetMLrange.charBegin).eq(7);
+      expect(errorWarnings.warnings[1].doenetMLrange.lineEnd).eq(7);
+      expect(errorWarnings.warnings[1].doenetMLrange.charEnd).eq(32);
+
+      expect(errorWarnings.warnings[2].message).contain(
+        "Cannot constrain to a <legend> as it doesn't have a nearestPoint state variable",
+      );
+      expect(errorWarnings.warnings[2].level).eq(1);
+      expect(errorWarnings.warnings[2].doenetMLrange.lineBegin).eq(15);
+      expect(errorWarnings.warnings[2].doenetMLrange.charBegin).eq(7);
+      expect(errorWarnings.warnings[2].doenetMLrange.lineEnd).eq(15);
+      expect(errorWarnings.warnings[2].doenetMLrange.charEnd).eq(36);
+    });
+  });
+
   it("copy point with no arguments, specify individual coordinates", () => {
     cy.window().then(async (win) => {
       win.postMessage(
@@ -10204,6 +10269,111 @@ describe("Point Tag Tests 2", function () {
     cy.get(cesc2("#/fx2")).should("have.text", "false");
   });
 
+  it("fix location or fixed is comunicated so know math from point can't be changed", () => {
+    cy.window().then(async (win) => {
+      win.postMessage(
+        {
+          doenetML: `
+    <graph>
+      <point name="P" fixLocation="$fl" fixed="$fx" draggable="$dg">(3,4)</point>
+      <point name="Q">(5,6)</point>
+      <point name="M">($P+$Q)/2</point>
+    </graph>
+
+    <p>Fix location: <booleaninput name="fl"/> <boolean copySource="P.fixLocation" name="fl2" /></p>
+    <p>Fixed: <booleaninput name="fx" /> <boolean copySource="P.fixed" name="fx2" /></p>
+    <p>Draggable: <booleaninput name="dg" prefill="true" /> <boolean copySource="P.draggable" name="dg2" /></p>
+    <p><booleaninput name="bi" /> <boolean name="b" copySource="bi" /></p>
+    <p>Midpoint: <math name="Ma" copySource="M" /></p>
+    `,
+        },
+        "*",
+      );
+    });
+
+    cy.get(cesc2("#/Ma") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(4,5)");
+
+    cy.log("cannot move midpoint point by dragging");
+    cy.window().then(async (win) => {
+      win.callAction1({
+        actionName: "movePoint",
+        componentName: "/M",
+        args: { x: 5, y: 6 },
+      });
+    });
+
+    // since nothing will change, wait for boolean input to change to know core has responded
+    cy.get(cesc2("#/bi")).click();
+    cy.get(cesc2("#/b")).should("have.text", "true");
+
+    cy.get(cesc2("#/Ma") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(4,5)");
+
+    cy.log("fix location of P");
+    cy.get(cesc2("#/fl")).click();
+    cy.get(cesc2("#/fl2")).should("have.text", "true");
+
+    cy.log("now can move midpoint point by dragging");
+    cy.window().then(async (win) => {
+      win.callAction1({
+        actionName: "movePoint",
+        componentName: "/M",
+        args: { x: 5, y: 6 },
+      });
+    });
+
+    cy.get(cesc2("#/Ma") + " .mjx-mrow").should("contain.text", "(5,6)");
+    cy.get(cesc2("#/Ma") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(5,6)");
+
+    cy.log("unfix location of P and make not draggable");
+    cy.get(cesc2("#/fl")).click();
+    cy.get(cesc2("#/dg")).click();
+    cy.get(cesc2("#/fl2")).should("have.text", "false");
+    cy.get(cesc2("#/dg2")).should("have.text", "false");
+
+    cy.log("cannot move midpoint point by dragging again");
+    cy.window().then(async (win) => {
+      win.callAction1({
+        actionName: "movePoint",
+        componentName: "/M",
+        args: { x: -1, y: -2 },
+      });
+    });
+
+    // since nothing will change, wait for boolean input to change to know core has responded
+    cy.get(cesc2("#/bi")).click();
+    cy.get(cesc2("#/b")).should("have.text", "false");
+
+    cy.get(cesc2("#/Ma") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(5,6)");
+
+    cy.log("fix P and make draggable");
+    cy.get(cesc2("#/fx")).click();
+    cy.get(cesc2("#/dg")).click();
+    cy.get(cesc2("#/fx2")).should("have.text", "true");
+    cy.get(cesc2("#/dg2")).should("have.text", "true");
+
+    cy.log("now can move midpoint point by dragging again");
+    cy.window().then(async (win) => {
+      win.callAction1({
+        actionName: "movePoint",
+        componentName: "/M",
+        args: { x: 4, y: 3 },
+      });
+    });
+
+    cy.get(cesc2("#/Ma") + " .mjx-mrow").should("contain.text", "(4,3)");
+    cy.get(cesc2("#/Ma") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(4,3)");
+  });
+
   it("hideOffGraphIndicator", () => {
     cy.window().then(async (win) => {
       win.postMessage(
@@ -10255,5 +10425,241 @@ describe("Point Tag Tests 2", function () {
     cy.get(cesc2("#/P3h")).should("have.text", "false");
     cy.get(cesc2("#/Q3h")).should("have.text", "true");
     cy.get(cesc2("#/R3h")).should("have.text", "false");
+  });
+
+  it("point can handle matrix-vector multiplication", () => {
+    cy.window().then(async (win) => {
+      win.postMessage(
+        {
+          doenetML: `
+    <matrix name="A">
+      <row>0 -1</row>
+      <row>1 0</row>
+    </matrix>
+    <graph>
+      <point name="P">(1,2)</point>
+      <point name="Q">$A$P</point>
+    </graph>
+    <point copySource="P" name="Pa" />
+    <point copySource="Q" name="Qa" />
+
+    `,
+        },
+        "*",
+      );
+    });
+
+    cy.get(cesc2("#/Pa") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(1,2)");
+    cy.get(cesc2("#/Qa") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(−2,1)");
+
+    cy.window().then(async (win) => {
+      win.callAction1({
+        actionName: "movePoint",
+        componentName: "/P",
+        args: { x: 4, y: -3 },
+      });
+    });
+
+    cy.get(cesc2("#/Pa") + " .mjx-mrow").should("contain.text", "(4,−3)");
+    cy.get(cesc2("#/Pa") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(4,−3)");
+    cy.get(cesc2("#/Qa") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(3,4)");
+  });
+
+  it("point with matrix for coords correctly gives NaN numerical xs", () => {
+    cy.window().then(async (win) => {
+      win.postMessage(
+        {
+          doenetML: `
+    <text>a</text>
+    <graph>
+      <point name="P"><matrix>
+        <row>0 -1</row>
+        <row>1 0</row>
+      </matrix></point>
+    </graph>
+
+    `,
+        },
+        "*",
+      );
+    });
+
+    cy.get(cesc2("#/_text1")).should("have.text", "a");
+
+    cy.window().then(async (win) => {
+      let stateVariables = await win.returnAllStateVariables1();
+      expect(stateVariables["/P"].stateValues.numericalXs).eqls([NaN]);
+    });
+  });
+
+  it("handle complex point values in graph", () => {
+    cy.window().then(async (win) => {
+      win.postMessage(
+        {
+          doenetML: `
+    <graph>
+      <point name="C1">(sqrt(-1), 1)</point>
+      <point name="C2">(1, sqrt(-1))</point>
+    </graph>
+
+    <p>$C1{assignNames="C1a"}, $C2{assignNames="C2a"}</p>
+
+    <p><mathinput name="mi1">$C1</mathinput>
+    <mathinput name="mi2">$C2</mathinput></p>
+
+    `,
+        },
+        "*",
+      );
+    });
+
+    cy.get(cesc2("#/C1a") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(√−1,1)");
+    cy.get(cesc2("#/C2a") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(1,√−1)");
+
+    cy.get(cesc2("#/mi1") + " textarea").type(
+      "{end}{leftArrow}{leftArrow}{leftArrow}{backspace}{backspace}{backspace}{backspace}-1{enter}",
+      { force: true },
+    );
+
+    cy.get(cesc2("#/mi2") + " textarea").type(
+      "{end}{leftArrow}{backspace}{backspace}{backspace}{backspace}-1{enter}",
+      { force: true },
+    );
+
+    cy.get(cesc2("#/C2a") + " .mjx-mrow").should("contain.text", "(1,−1)");
+
+    cy.get(cesc2("#/C1a") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(−1,1)");
+    cy.get(cesc2("#/C2a") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(1,−1)");
+  });
+
+  it("skip actions when drag slow point", () => {
+    cy.window().then(async (win) => {
+      win.postMessage(
+        {
+          doenetML: `
+  <number name="theta">pi/10</number>
+  <matrix name="A">
+    <row><number>0.9cos($theta)</number> <number>-0.9sin($theta)</number></row>
+    <row><number>0.9sin($theta)</number> <number>0.9cos($theta)</number></row>
+  </matrix>
+  
+  <graph>
+    <point name="P0" styleNumber="2">(3,4)</point>
+    <map name="mp">
+      <template>
+        <point fixed>$A
+          <conditionalContent>
+            <case condition="$i=1">$P0</case>
+            <else>$mp[$i-1]</else>
+          </conditionalContent>
+        </point>
+      </template>
+      <sources indexAlias="i"><sequence length="20" /></sources>
+    </map>
+  </graph>
+  <point copySource="P0" name="P0a" />
+    `,
+        },
+        "*",
+      );
+    });
+
+    cy.get(cesc2("#/P0a") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(3,4)");
+
+    cy.log("move point using skippable actions to upper right");
+    let promises = [];
+    for (let i = 0; i < 100; i++) {
+      cy.window().then(async (win) => {
+        let x = i * 0.1;
+        let y = i * 0.1;
+
+        promises.push(
+          win.callAction1({
+            actionName: "movePoint",
+            componentName: "/P0",
+            args: { x, y, skippable: true },
+          }),
+        );
+      });
+      cy.wait(10);
+    }
+
+    cy.log("most of the actions, except first and last, were skipped");
+    cy.window().then(async (win) => {
+      Promise.all(promises).then((values) => {
+        expect(values.length).eq(100);
+        expect(values[0]).eq(true);
+        expect(values[99]).eq(true);
+        expect(values.slice(1, 99).filter((x) => x).length)
+          .greaterThan(1)
+          .lessThan(50);
+      });
+    });
+
+    cy.get(cesc2("#/P0a") + " .mjx-mrow").should("contain.text", "(9.9,9.9)");
+    cy.get(cesc2("#/P0a") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(9.9,9.9)");
+
+    cy.log(
+      "move point using skippable and non-skippable actions to upper left",
+    );
+    let promises2 = [];
+    for (let i = 0; i < 100; i++) {
+      cy.window().then(async (win) => {
+        let x = -i * 0.1;
+        let y = i * 0.1;
+
+        promises2.push(
+          win.callAction1({
+            actionName: "movePoint",
+            componentName: "/P0",
+            args: { x, y, skippable: i % 10 !== 5 },
+          }),
+        );
+      });
+      cy.wait(10);
+    }
+
+    cy.log(
+      "most of the skippable but none of the non-skippable actions were skipped",
+    );
+    cy.window().then(async (win) => {
+      Promise.all(promises2).then((values) => {
+        expect(values.length).eq(100);
+        expect(values[0]).eq(true);
+        expect(values[99]).eq(true);
+
+        // None of the non-skippable actions were skipped
+        expect(values.filter((x, i) => i % 10 == 5).every((x) => x)).eq(true);
+
+        expect(values.slice(1, 99).filter((x) => x).length)
+          .greaterThan(9)
+          .lessThan(50);
+      });
+    });
+
+    cy.get(cesc2("#/P0a") + " .mjx-mrow").should("contain.text", "(−9.9,9.9)");
+    cy.get(cesc2("#/P0a") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(−9.9,9.9)");
   });
 });

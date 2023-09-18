@@ -6,6 +6,8 @@ import { verifyReplacementsMatchSpecifiedType } from "../utils/copy";
 export default class Extract extends CompositeComponent {
   static componentType = "extract";
 
+  static excludeFromSchema = true;
+
   static assignNamesToReplacements = true;
 
   static acceptAnyAttribute = true;
@@ -41,12 +43,14 @@ export default class Extract extends CompositeComponent {
       createStateVariable: "componentIndex",
       defaultValue: null,
       public: true,
+      excludeFromSchema: true,
     };
     attributes.propIndex = {
       createComponentOfType: "numberList",
       createStateVariable: "propIndex",
       defaultValue: null,
       public: true,
+      excludeFromSchema: true,
     };
     return attributes;
   }
@@ -119,7 +123,16 @@ export default class Extract extends CompositeComponent {
         },
       }),
       definition: function ({ dependencyValues }) {
-        return { setValue: { propName: dependencyValues.propName } };
+        let warnings = [];
+        let propName = dependencyValues.propName;
+        if (!propName) {
+          warnings.push({
+            message: "Invalid extract.  Must have a prop.",
+            level: 1,
+          });
+          propName = "";
+        }
+        return { setValue: { propName }, sendWarnings: warnings };
       },
     };
 
@@ -238,6 +251,9 @@ export default class Extract extends CompositeComponent {
   }) {
     // console.log(`calculating replacements for ${component.componentName}`);
 
+    let errors = [];
+    let warnings = [];
+
     let replacements = [];
 
     let numReplacementsBySource = [];
@@ -266,6 +282,8 @@ export default class Extract extends CompositeComponent {
           compositeAttributesObj,
           publicCaseInsensitiveAliasSubstitutions,
         });
+        errors.push(...results.errors);
+        warnings.push(...results.warnings);
 
         workspace.propVariablesCopiedBySource[sourceNum] =
           results.propVariablesCopiedByReplacement;
@@ -291,12 +309,16 @@ export default class Extract extends CompositeComponent {
       componentInfoObjects,
       compositeAttributesObj,
       flags,
+      components,
+      publicCaseInsensitiveAliasSubstitutions,
     });
+    errors.push(...verificationResult.errors);
+    warnings.push(...verificationResult.warnings);
 
     // console.log(`serialized replacements for ${component.componentName}`)
     // console.log(JSON.parse(JSON.stringify(verificationResult.replacements)))
 
-    return { replacements: verificationResult.replacements };
+    return { replacements: verificationResult.replacements, errors, warnings };
   }
 
   static async createReplacementForSource({
@@ -310,6 +332,9 @@ export default class Extract extends CompositeComponent {
     publicCaseInsensitiveAliasSubstitutions,
   }) {
     // console.log(`create replacement for source ${sourceNum}, ${numReplacementsSoFar} of ${component.componentName}`)
+
+    let errors = [];
+    let warnings = [];
 
     let propName = (await component.stateValues.effectivePropNameBySource)[
       sourceNum
@@ -328,6 +353,8 @@ export default class Extract extends CompositeComponent {
       componentInfoObjects,
       publicCaseInsensitiveAliasSubstitutions,
     });
+    errors.push(...results.errors);
+    warnings.push(...results.warnings);
 
     let serializedReplacements = results.serializedReplacements;
     let propVariablesCopiedByReplacement =
@@ -343,10 +370,17 @@ export default class Extract extends CompositeComponent {
       parentCreatesNewNamespace: newNamespace,
       componentInfoObjects,
     });
+    errors.push(...processResult.errors);
+    warnings.push(...processResult.warnings);
 
     serializedReplacements = processResult.serializedComponents;
 
-    return { serializedReplacements, propVariablesCopiedByReplacement };
+    return {
+      serializedReplacements,
+      propVariablesCopiedByReplacement,
+      errors,
+      warnings,
+    };
   }
 
   static async calculateReplacementChanges({
@@ -360,6 +394,10 @@ export default class Extract extends CompositeComponent {
     // console.log(`calculating replacement changes for ${component.componentName}`);
     // console.log(workspace.numReplacementsBySource);
     // console.log(component.replacements);
+
+    // TODO: don't yet have a way to return errors and warnings!
+    let errors = [];
+    let warnings = [];
 
     let replacementChanges = [];
 
@@ -471,6 +509,8 @@ export default class Extract extends CompositeComponent {
           compositeAttributesObj,
           publicCaseInsensitiveAliasSubstitutions,
         });
+        errors.push(...results.errors);
+        warnings.push(...results.warnings);
 
         numReplacementsSoFar += results.numReplacements;
 
@@ -525,6 +565,8 @@ export default class Extract extends CompositeComponent {
         compositeAttributesObj,
         publicCaseInsensitiveAliasSubstitutions,
       });
+      errors.push(...results.errors);
+      warnings.push(...results.warnings);
 
       let propVariablesCopiedByReplacement =
         results.propVariablesCopiedByReplacement;
@@ -603,7 +645,11 @@ export default class Extract extends CompositeComponent {
       componentInfoObjects,
       compositeAttributesObj,
       flags,
+      components,
+      publicCaseInsensitiveAliasSubstitutions,
     });
+    errors.push(...verificationResult.errors);
+    warnings.push(...verificationResult.warnings);
 
     // console.log("replacementChanges");
     // console.log(verificationResult.replacementChanges);
@@ -622,6 +668,9 @@ export default class Extract extends CompositeComponent {
     compositeAttributesObj,
     publicCaseInsensitiveAliasSubstitutions,
   }) {
+    let errors = [];
+    let warnings = [];
+
     let results = await this.createReplacementForSource({
       component,
       sourceNum,
@@ -632,6 +681,8 @@ export default class Extract extends CompositeComponent {
       compositeAttributesObj,
       publicCaseInsensitiveAliasSubstitutions,
     });
+    errors.push(...results.errors);
+    warnings.push(...results.warnings);
 
     let propVariablesCopiedByReplacement =
       results.propVariablesCopiedByReplacement;
@@ -651,6 +702,8 @@ export default class Extract extends CompositeComponent {
       numReplacements: newSerializedChildren.length,
       propVariablesCopiedByReplacement,
       replacementInstruction,
+      errors,
+      warnings,
     };
   }
 }

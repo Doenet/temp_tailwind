@@ -19,6 +19,8 @@ export default class Document extends BaseComponent {
   static rendererType = "section";
   static renderChildren = true;
 
+  static canDisplayChildErrors = true;
+
   static createsVariants = true;
 
   static includeBlankStringChildren = true;
@@ -743,11 +745,9 @@ export default class Document extends BaseComponent {
         });
       }
     }
-
-    this.coreFunctions.resolveAction({ actionId });
   }
 
-  recordVisibilityChange({ isVisible, actionId }) {
+  recordVisibilityChange({ isVisible }) {
     this.coreFunctions.requestRecordEvent({
       verb: "visibilityChanged",
       object: {
@@ -756,7 +756,6 @@ export default class Document extends BaseComponent {
       },
       result: { isVisible },
     });
-    this.coreFunctions.resolveAction({ actionId });
   }
 
   static setUpVariant({
@@ -766,7 +765,7 @@ export default class Document extends BaseComponent {
   }) {
     // console.log("****Variant for document*****")
 
-    let numVariants = serializedComponent.variants.numberOfVariants;
+    let numVariants = serializedComponent.variants.numVariants;
 
     let variantIndex;
     // check if desiredVariant was specified

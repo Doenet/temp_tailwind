@@ -1,18 +1,17 @@
 import React, { useContext, useEffect, useRef } from "react";
 import { createFunctionFromDefinition } from "../../Core/utils/function";
-import useDoenetRender from "../useDoenetRenderer";
+import useDoenetRenderer from "../useDoenetRenderer";
 import {
   BoardContext,
   CONTROL_POINT_LAYER_OFFSET,
   LINE_LAYER_OFFSET,
   VERTEX_LAYER_OFFSET,
 } from "./graph";
-import { useRecoilValue } from "recoil";
-import { darkModeAtom } from "../../Tools/_framework/DarkmodeController";
+import { PageContext } from "../PageViewer";
 
 export default React.memo(function Curve(props) {
   let { name, id, SVs, actions, sourceOfUpdate, callAction } =
-    useDoenetRender(props);
+    useDoenetRenderer(props);
 
   Curve.ignoreActionsWithoutCore = () => true;
 
@@ -59,7 +58,7 @@ export default React.memo(function Curve(props) {
   let lastControlPointPositionsFromCore = useRef(null);
   lastControlPointPositionsFromCore.current = SVs.numericalControlPoints;
 
-  const darkMode = useRecoilValue(darkModeAtom);
+  const { darkMode } = useContext(PageContext) || {};
 
   useEffect(() => {
     //On unmount
@@ -296,6 +295,7 @@ export default React.memo(function Curve(props) {
         highlightStrokeWidth: 1,
         layer: 10 * SVs.layer + VERTEX_LAYER_OFFSET,
         size: 3,
+        showInfoBox: SVs.showCoordsWhenDragging,
       };
       throughPointAlwaysVisible.current = {
         fillcolor: "var(--mainGray)",
@@ -318,6 +318,7 @@ export default React.memo(function Curve(props) {
         highlightStrokeWidth: 1,
         layer: 10 * SVs.layer + CONTROL_POINT_LAYER_OFFSET,
         size: 2,
+        showInfoBox: SVs.showCoordsWhenDragging,
       };
 
       if (!fixLocation.current) {
@@ -724,13 +725,15 @@ export default React.memo(function Curve(props) {
       let segmentLayer, throughPointLayer, controlPointLayer;
 
       if (layerChanged) {
-        segmentLayer = 10 * SVs.layer + VERTEX_LAYER_OFFSET;
-        throughPointLayer = 10 * SVs.layer + VERTEX_LAYER_OFFSET;
-        controlPointLayer = 10 * SVs.layer + CONTROL_POINT_LAYER_OFFSET;
         curveJXG.current.setAttribute({ layer: curveLayer });
-        segmentAttributes.current.layer = segmentLayer;
-        throughPointAttributes.current.layer = throughPointLayer;
-        controlPointAttributes.current.layer = controlPointLayer;
+        if (SVs.curveType === "bezier") {
+          segmentLayer = 10 * SVs.layer + VERTEX_LAYER_OFFSET;
+          throughPointLayer = 10 * SVs.layer + VERTEX_LAYER_OFFSET;
+          controlPointLayer = 10 * SVs.layer + CONTROL_POINT_LAYER_OFFSET;
+          segmentAttributes.current.layer = segmentLayer;
+          throughPointAttributes.current.layer = throughPointLayer;
+          controlPointAttributes.current.layer = controlPointLayer;
+        }
       }
 
       let lineColor =
@@ -770,6 +773,9 @@ export default React.memo(function Curve(props) {
         curveJXG.current.Y = createFunctionFromDefinition(SVs.fDefinitions[1]);
         curveJXG.current.minX = () => SVs.parMin;
         curveJXG.current.maxX = () => SVs.parMax;
+
+        throughPointAttributes.current.showInfoBox = SVs.showCoordsWhenDragging;
+        controlPointAttributes.current.showInfoBox = SVs.showCoordsWhenDragging;
       } else {
         let f = createFunctionFromDefinition(SVs.fDefinitions[0]);
         if (SVs.flipFunction) {
@@ -998,12 +1004,17 @@ export default React.memo(function Curve(props) {
         throughPointsJXG.current[i].coords.setCoordinates(JXG.COORDS_BY_USER, [
           ...SVs.numericalThroughPoints[i],
         ]);
+
+        throughPointsJXG.current[i].visProp.showinfobox =
+          SVs.showCoordsWhenDragging;
         throughPointsJXG.current[i].needsUpdate = true;
         throughPointsJXG.current[i].update();
         controlPointsJXG.current[i][0].coords.setCoordinates(
           JXG.COORDS_BY_USER,
           [...SVs.numericalControlPoints[i][0]],
         );
+        controlPointsJXG.current[i][0].visProp.showinfobox =
+          SVs.showCoordsWhenDragging;
         controlPointsJXG.current[i][0].needsUpdate = true;
         controlPointsJXG.current[i][0].update();
         segmentsJXG.current[i][0].needsUpdate = true;
@@ -1012,6 +1023,8 @@ export default React.memo(function Curve(props) {
           JXG.COORDS_BY_USER,
           [...SVs.numericalControlPoints[i][1]],
         );
+        controlPointsJXG.current[i][1].visProp.showinfobox =
+          SVs.showCoordsWhenDragging;
         controlPointsJXG.current[i][1].needsUpdate = true;
         controlPointsJXG.current[i][1].update();
         segmentsJXG.current[i][1].needsUpdate = true;

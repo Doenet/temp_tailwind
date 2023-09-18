@@ -18,7 +18,11 @@ export default class CodeEditor extends BlockComponent {
 
   static renderChildren = true;
 
+  static ignoreVariantsFromChildren = true;
+
   static processWhenJustUpdatedForNewComponent = true;
+
+  static ignoreErrorsFromChildren = true;
 
   static get stateVariablesShadowedForReference() {
     return ["value"];
@@ -39,7 +43,7 @@ export default class CodeEditor extends BlockComponent {
     attributes.width = {
       createComponentOfType: "_componentSize",
       createStateVariable: "width",
-      defaultValue: { size: 600, isAbsolute: true },
+      defaultValue: { size: `100`, isAbsolute: false },
       forRenderer: true,
       public: true,
     };
@@ -113,7 +117,6 @@ export default class CodeEditor extends BlockComponent {
     let addCodeViewer = function ({ matchedChildren, componentAttributes }) {
       let codeViewer = {
         componentType: "codeViewer",
-        children: [{ componentType: "renderDoenetML" }],
       };
 
       //Update depends on this being the 1st index position
@@ -199,6 +202,33 @@ export default class CodeEditor extends BlockComponent {
         }
         let viewerHeight = { size, isAbsolute: true };
         return { setValue: { viewerHeight } };
+      },
+    };
+
+    stateVariableDefinitions.viewerWidth = {
+      returnDependencies: () => ({
+        width: {
+          dependencyType: "stateVariable",
+          variableName: "width",
+        },
+        resultsLocation: {
+          dependencyType: "stateVariable",
+          variableName: "resultsLocation",
+        },
+      }),
+      definition: function ({ dependencyValues }) {
+        let viewerWidth;
+
+        if (
+          dependencyValues.resultsLocation === "left" ||
+          dependencyValues.resultsLocation === "right"
+        ) {
+          viewerWidth = { size: 1000, isAbsolute: true };
+        } else {
+          viewerWidth = dependencyValues.width.size;
+        }
+
+        return { setValue: { viewerWidth } };
       },
     };
 
@@ -472,6 +502,7 @@ export default class CodeEditor extends BlockComponent {
 
     stateVariableDefinitions.childIndicesToRender = {
       stateVariablesDeterminingDependencies: ["allChildren"],
+      additionalStateVariablesDefined: ["viewerChildName"],
       returnDependencies({ stateValues }) {
         let dependencies = {};
         if (stateValues.allChildren[0]?.componentType === "codeViewer") {
@@ -480,17 +511,50 @@ export default class CodeEditor extends BlockComponent {
             componentName: stateValues.allChildren[0].componentName,
             attributeName: "createdFromSugar",
           };
+          dependencies.viewerChildName = {
+            dependencyType: "value",
+            value: stateValues.allChildren[0].componentName,
+          };
         }
         return dependencies;
       },
       definition({ dependencyValues }) {
         let childIndicesToRender = [];
+        let viewerChildName = null;
 
         if (dependencyValues.firstCodeViewerFromSugar) {
           childIndicesToRender.push(0);
+          viewerChildName = dependencyValues.viewerChildName;
         }
 
-        return { setValue: { childIndicesToRender } };
+        return { setValue: { childIndicesToRender, viewerChildName } };
+      },
+    };
+
+    stateVariableDefinitions.errorsAndWarnings = {
+      forRenderer: true,
+      stateVariablesDeterminingDependencies: ["viewerChildName", "showResults"],
+      returnDependencies({ stateValues }) {
+        if (stateValues.viewerChildName && stateValues.showResults) {
+          return {
+            errorsAndWarnings: {
+              dependencyType: "stateVariable",
+              componentName: stateValues.viewerChildName,
+              variableName: "errorsAndWarnings",
+            },
+          };
+        } else {
+          return {};
+        }
+      },
+      definition({ dependencyValues }) {
+        if (dependencyValues.errorsAndWarnings) {
+          return {
+            setValue: { errorsAndWarnings: dependencyValues.errorsAndWarnings },
+          };
+        } else {
+          return { setValue: { errorsAndWarnings: null } };
+        }
       },
     };
 
@@ -504,25 +568,34 @@ export default class CodeEditor extends BlockComponent {
     skipRendererUpdate = false,
   }) {
     if (!(await this.stateValues.disabled)) {
-      return this.coreFunctions.performUpdate({
-        updateInstructions: [
-          {
-            updateType: "updateValue",
-            componentName: this.componentName,
-            stateVariable: "immediateValue",
-            value: text,
-          },
-          {
-            updateType: "setComponentNeedingUpdateValue",
-            componentName: this.componentName,
-          },
-        ],
+      let updateInstructions = [
+        {
+          updateType: "updateValue",
+          componentName: this.componentName,
+          stateVariable: "immediateValue",
+          value: text,
+        },
+        {
+          updateType: "setComponentNeedingUpdateValue",
+          componentName: this.componentName,
+        },
+      ];
+
+      let viewerChildName = await this.stateValues.viewerChildName;
+      if (viewerChildName) {
+        updateInstructions.push({
+          updateType: "updateValue",
+          componentName: viewerChildName,
+          stateVariable: "codeChanged",
+          value: true,
+        });
+      }
+      return await this.coreFunctions.performUpdate({
+        updateInstructions,
         actionId,
         sourceInformation,
         skipRendererUpdate,
       });
-    } else {
-      this.coreFunctions.resolveAction({ actionId });
     }
   }
 
@@ -581,40 +654,35 @@ export default class CodeEditor extends BlockComponent {
           };
         }
 
-        return this.coreFunctions
-          .performUpdate({
-            updateInstructions,
-            actionId,
-            sourceInformation,
-            skipRendererUpdate: true,
-            event,
-          })
-          .then(() => {
-            this.coreFunctions.triggerChainedActions({
-              componentName: this.componentName,
-              actionId,
-              sourceInformation,
-              skipRendererUpdate,
-            });
-            if (
-              this.attributes.staticName &&
-              this.definingChildren[1]?.componentType === "codeViewer" &&
-              this.definingChildren[1].doenetAttributes.createdFromSugar
-            ) {
-              this.coreFunctions.performAction({
-                componentName: this.definingChildren[1].componentName,
-                actionName: "updateComponents",
-                args: { sourceInformation, skipRendererUpdate },
-              });
-            }
+        await this.coreFunctions.performUpdate({
+          updateInstructions,
+          actionId,
+          sourceInformation,
+          skipRendererUpdate: true,
+          event,
+        });
+        await this.coreFunctions.triggerChainedActions({
+          componentName: this.componentName,
+          actionId,
+          sourceInformation,
+          skipRendererUpdate,
+        });
+        if (
+          this.attributes.staticName &&
+          this.definingChildren[1]?.componentType === "codeViewer" &&
+          this.definingChildren[1].doenetAttributes.createdFromSugar
+        ) {
+          await this.coreFunctions.performAction({
+            componentName: this.definingChildren[1].componentName,
+            actionName: "updateComponents",
+            args: { sourceInformation, skipRendererUpdate },
           });
+        }
       }
     }
-
-    this.coreFunctions.resolveAction({ actionId });
   }
 
-  async updateComponents() {
+  async updateComponents(args) {
     if (
       this.definingChildren[0]?.componentType === "codeViewer" &&
       this.definingChildren[0].doenetAttributes?.createdFromSugar
@@ -622,18 +690,12 @@ export default class CodeEditor extends BlockComponent {
       await this.coreFunctions.performAction({
         componentName: this.definingChildren[0].componentName,
         actionName: "updateComponents",
-        // event: {
-        //   verb: "selected",
-        //   object: {
-        //     componentName: this.componentName,
-        //     componentType: this.componentType,
-        //   },
-        // },
+        args,
       });
     }
   }
 
-  recordVisibilityChange({ isVisible, actionId }) {
+  recordVisibilityChange({ isVisible }) {
     this.coreFunctions.requestRecordEvent({
       verb: "visibilityChanged",
       object: {
@@ -642,6 +704,5 @@ export default class CodeEditor extends BlockComponent {
       },
       result: { isVisible },
     });
-    this.coreFunctions.resolveAction({ actionId });
   }
 }

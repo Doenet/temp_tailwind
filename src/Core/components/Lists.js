@@ -12,6 +12,7 @@ export class Ol extends BlockComponent {
   static componentType = "ol";
   static rendererType = "list";
   static renderChildren = true;
+  static canDisplayChildErrors = true;
 
   static createAttributesObject() {
     let attributes = super.createAttributesObject();
@@ -47,6 +48,10 @@ export class Ol extends BlockComponent {
       {
         group: "lis",
         componentTypes: ["li"],
+      },
+      {
+        group: "errors",
+        componentTypes: ["_error"],
       },
     ];
   }
@@ -101,7 +106,7 @@ export class Ol extends BlockComponent {
     return stateVariableDefinitions;
   }
 
-  recordVisibilityChange({ isVisible, actionId }) {
+  recordVisibilityChange({ isVisible }) {
     this.coreFunctions.requestRecordEvent({
       verb: "visibilityChanged",
       object: {
@@ -110,7 +115,6 @@ export class Ol extends BlockComponent {
       },
       result: { isVisible },
     });
-    this.coreFunctions.resolveAction({ actionId });
   }
 }
 
@@ -142,6 +146,9 @@ export class Li extends BaseComponent {
   static componentType = "li";
   static rendererType = "list";
   static renderChildren = true;
+  static canDisplayChildErrors = true;
+
+  static inSchemaOnlyInheritAs = [];
 
   static includeBlankStringChildren = true;
 
@@ -166,7 +173,7 @@ export class Li extends BaseComponent {
     return stateVariableDefinitions;
   }
 
-  recordVisibilityChange({ isVisible, actionId }) {
+  recordVisibilityChange({ isVisible }) {
     this.coreFunctions.requestRecordEvent({
       verb: "visibilityChanged",
       object: {
@@ -175,6 +182,5 @@ export class Li extends BaseComponent {
       },
       result: { isVisible },
     });
-    this.coreFunctions.resolveAction({ actionId });
   }
 }

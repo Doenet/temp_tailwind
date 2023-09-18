@@ -10,6 +10,8 @@ export default class Embed extends BlockComponent {
   }
   static componentType = "embed";
 
+  static excludeFromSchema = true;
+
   static createAttributesObject() {
     let attributes = super.createAttributesObject();
     attributes.width = {
@@ -51,7 +53,7 @@ export default class Embed extends BlockComponent {
     return attributes;
   }
 
-  recordVisibilityChange({ isVisible, actionId }) {
+  recordVisibilityChange({ isVisible }) {
     this.coreFunctions.requestRecordEvent({
       verb: "visibilityChanged",
       object: {
@@ -60,6 +62,5 @@ export default class Embed extends BlockComponent {
       },
       result: { isVisible },
     });
-    this.coreFunctions.resolveAction({ actionId });
   }
 }

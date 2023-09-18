@@ -304,7 +304,7 @@ export class Solution extends BlockComponent {
     });
   }
 
-  recordVisibilityChange({ isVisible, actionId }) {
+  recordVisibilityChange({ isVisible }) {
     this.coreFunctions.requestRecordEvent({
       verb: "visibilityChanged",
       object: {
@@ -313,7 +313,6 @@ export class Solution extends BlockComponent {
       },
       result: { isVisible },
     });
-    this.coreFunctions.resolveAction({ actionId });
   }
 
   static includeBlankStringChildren = true;
@@ -321,6 +320,8 @@ export class Solution extends BlockComponent {
 
 export class GivenAnswer extends Solution {
   static componentType = "givenAnswer";
+
+  static excludeFromSchema = true;
 
   static returnStateVariableDefinitions() {
     let stateVariableDefinitions = super.returnStateVariableDefinitions();

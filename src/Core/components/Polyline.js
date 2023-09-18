@@ -38,6 +38,14 @@ export default class Polyline extends GraphicalComponent {
       createComponentOfType: "_pointListComponent",
     };
 
+    attributes.showCoordsWhenDragging = {
+      createComponentOfType: "boolean",
+      createStateVariable: "showCoordsWhenDragging",
+      defaultValue: true,
+      public: true,
+      forRenderer: true,
+    };
+
     Object.assign(attributes, returnRoundingAttributes());
 
     return attributes;
@@ -193,7 +201,7 @@ export default class Polyline extends GraphicalComponent {
           let numDimensions =
             dependencyValues.vertices.stateValues.numDimensions;
           return {
-            setValue: { numDimensions },
+            setValue: { numDimensions: Math.max(2, numDimensions) },
             checkForActualChange: { numDimensions: true },
           };
         } else {
@@ -599,6 +607,33 @@ export default class Polyline extends GraphicalComponent {
       },
     };
 
+    stateVariableDefinitions.length = {
+      public: true,
+      shadowingInstructions: {
+        createComponentOfType: "number",
+        addAttributeComponentsShadowingStateVariables:
+          returnRoundingAttributeComponentShadowing(),
+      },
+      returnDependencies: () => ({
+        numericalVertices: {
+          dependencyType: "stateVariable",
+          variableName: "numericalVertices",
+        },
+      }),
+      definition({ dependencyValues }) {
+        let length = 0;
+        let verts = dependencyValues.numericalVertices;
+        let nVerts = dependencyValues.numericalVertices.length;
+        for (let i = 0; i < nVerts - 1; i++) {
+          let dx = verts[i + 1][0] - verts[i][0];
+          let dy = verts[i + 1][1] - verts[i][1];
+          length += Math.sqrt(dx * dx + dy * dy);
+        }
+
+        return { setValue: { length } };
+      },
+    };
+
     return stateVariableDefinitions;
   }
 
@@ -615,12 +650,12 @@ export default class Polyline extends GraphicalComponent {
     if (numVerticesMoved === 1) {
       // single vertex dragged
       if (!(await this.stateValues.verticesDraggable)) {
-        return await this.coreFunctions.resolveAction({ actionId });
+        return;
       }
     } else {
       // whole polyline dragged
       if (!(await this.stateValues.draggable)) {
-        return await this.coreFunctions.resolveAction({ actionId });
+        return;
       }
     }
 
@@ -816,8 +851,6 @@ export default class Polyline extends GraphicalComponent {
         skipRendererUpdate,
       });
     }
-
-    this.coreFunctions.resolveAction({ actionId });
   }
 
   async polylineFocused({
@@ -835,7 +868,5 @@ export default class Polyline extends GraphicalComponent {
         skipRendererUpdate,
       });
     }
-
-    this.coreFunctions.resolveAction({ actionId });
   }
 }

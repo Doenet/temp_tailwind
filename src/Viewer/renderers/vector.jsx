@@ -1,15 +1,13 @@
 import React, { useContext, useEffect, useState, useRef } from "react";
-import useDoenetRender from "../useDoenetRenderer";
+import useDoenetRenderer from "../useDoenetRenderer";
 import { BoardContext, LINE_LAYER_OFFSET, VERTEX_LAYER_OFFSET } from "./graph";
-import me from "math-expressions";
 import { MathJax } from "better-react-mathjax";
-import { useRecoilValue } from "recoil";
-import { darkModeAtom } from "../../Tools/_framework/DarkmodeController";
 import { textRendererStyle } from "../../Core/utils/style";
+import { PageContext } from "../PageViewer";
 
 export default React.memo(function Vector(props) {
   let { name, id, SVs, actions, sourceOfUpdate, callAction } =
-    useDoenetRender(props);
+    useDoenetRenderer(props);
 
   Vector.ignoreActionsWithoutCore = () => true;
 
@@ -43,7 +41,7 @@ export default React.memo(function Vector(props) {
   tailDraggable.current = SVs.tailDraggable && !SVs.fixed && !SVs.fixLocation;
   headDraggable.current = SVs.headDraggable && !SVs.fixed && !SVs.fixLocation;
 
-  const darkMode = useRecoilValue(darkModeAtom);
+  const { darkMode } = useContext(PageContext) || {};
 
   useEffect(() => {
     //On unmount
@@ -119,6 +117,7 @@ export default React.memo(function Vector(props) {
         document.documentElement,
       ).getPropertyValue("--mainGray"),
       layer: pointLayer,
+      showInfoBox: SVs.showCoordsWhenDragging,
     });
 
     // create invisible points at endpoints
@@ -559,6 +558,9 @@ export default React.memo(function Vector(props) {
 
       point2JXG.current.visProp["visible"] = headVisible;
       point2JXG.current.visPropCalc["visible"] = headVisible;
+
+      point1JXG.current.visProp.showinfobox = SVs.showCoordsWhenDragging;
+      point2JXG.current.visProp.showinfobox = SVs.showCoordsWhenDragging;
 
       if (
         sourceOfUpdate.sourceInformation &&

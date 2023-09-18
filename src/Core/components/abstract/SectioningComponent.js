@@ -22,6 +22,8 @@ export class SectioningComponent extends BlockComponent {
   static componentType = "_sectioningComponent";
   static renderChildren = true;
 
+  static canDisplayChildErrors = true;
+
   static includeBlankStringChildren = true;
 
   static createsVariants = true;
@@ -836,6 +838,8 @@ export class SectioningComponent extends BlockComponent {
         },
       }),
       definition({ dependencyValues, componentName }) {
+        let warnings = [];
+
         let createSubmitAllButton = false;
         let suppressAnswerSubmitButtons = false;
 
@@ -852,14 +856,16 @@ export class SectioningComponent extends BlockComponent {
             createSubmitAllButton = true;
             suppressAnswerSubmitButtons = true;
           } else {
-            console.warn(
-              `Cannot create submit all button for ${componentName} because it doesn't aggegrate scores`,
-            );
+            warnings.push({
+              message: `Cannot create submit all button for <section> because it doesn't aggegrate scores.`,
+              level: 1,
+            });
           }
         }
 
         return {
           setValue: { createSubmitAllButton, suppressAnswerSubmitButtons },
+          sendWarnings: warnings,
         };
       },
     };
@@ -912,8 +918,6 @@ export class SectioningComponent extends BlockComponent {
         });
       }
     }
-
-    this.coreFunctions.resolveAction({ actionId });
   }
 
   async revealSection({
@@ -972,7 +976,7 @@ export class SectioningComponent extends BlockComponent {
     });
   }
 
-  recordVisibilityChange({ isVisible, actionId }) {
+  recordVisibilityChange({ isVisible }) {
     this.coreFunctions.requestRecordEvent({
       verb: "visibilityChanged",
       object: {
@@ -981,7 +985,6 @@ export class SectioningComponent extends BlockComponent {
       },
       result: { isVisible },
     });
-    this.coreFunctions.resolveAction({ actionId });
   }
 
   static setUpVariant({
@@ -1004,7 +1007,7 @@ export class SectioningComponent extends BlockComponent {
       return;
     }
 
-    let numVariants = serializedComponent.variants.numberOfVariants;
+    let numVariants = serializedComponent.variants.numVariants;
 
     let variantIndex;
     // check if desiredVariant was specified

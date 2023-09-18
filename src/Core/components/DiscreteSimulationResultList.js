@@ -17,6 +17,8 @@ export default class DiscreteSimulationResultList extends BlockComponent {
   static componentType = "DiscreteSimulationResultList";
   static rendererType = "spreadsheet";
 
+  static excludeFromSchema = true;
+
   static createAttributesObject() {
     let attributes = super.createAttributesObject();
     attributes.width = {
@@ -323,12 +325,10 @@ export default class DiscreteSimulationResultList extends BlockComponent {
           result: cellChanges,
         },
       });
-    } else {
-      this.coreFunctions.resolveAction({ actionId });
     }
   }
 
-  recordVisibilityChange({ isVisible, actionId }) {
+  recordVisibilityChange({ isVisible }) {
     this.coreFunctions.requestRecordEvent({
       verb: "visibilityChanged",
       object: {
@@ -337,6 +337,5 @@ export default class DiscreteSimulationResultList extends BlockComponent {
       },
       result: { isVisible },
     });
-    this.coreFunctions.resolveAction({ actionId });
   }
 }

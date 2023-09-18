@@ -12,6 +12,7 @@ export class Paginator extends BlockComponent {
   static componentType = "paginator";
   static rendererType = "containerBlock";
   static renderChildren = true;
+  static canDisplayChildErrors = true;
 
   static createAttributesObject() {
     let attributes = super.createAttributesObject();
@@ -148,7 +149,6 @@ export class Paginator extends BlockComponent {
     skipRendererUpdate = false,
   }) {
     if (!Number.isInteger(number)) {
-      this.coreFunctions.resolveAction({ actionId });
       return;
     }
 
@@ -186,7 +186,7 @@ export class Paginator extends BlockComponent {
     });
   }
 
-  recordVisibilityChange({ isVisible, actionId }) {
+  recordVisibilityChange({ isVisible }) {
     this.coreFunctions.requestRecordEvent({
       verb: "visibilityChanged",
       object: {
@@ -195,7 +195,6 @@ export class Paginator extends BlockComponent {
       },
       result: { isVisible },
     });
-    this.coreFunctions.resolveAction({ actionId });
   }
 }
 

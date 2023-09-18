@@ -23,9 +23,13 @@ import { nanoid } from "nanoid";
 import { cidFromText } from "./utils/cid";
 import createComponentInfoObjects from "./utils/componentInfoObjects";
 import { get as idb_get, set as idb_set } from "idb-keyval";
-import { toastType } from "../Tools/_framework/ToastTypes";
 import axios from "axios";
-import { gatherVariantComponents, getNumberOfVariants } from "./utils/variants";
+import { gatherVariantComponents, getNumVariants } from "./utils/variants";
+import {
+  assignDoenetMLRange,
+  findAllNewlines,
+  getLineCharRange,
+} from "./utils/logging";
 
 // string to componentClass: this.componentInfoObjects.allComponentClasses["string"]
 // componentClass to string: componentClass.componentType
@@ -33,8 +37,10 @@ import { gatherVariantComponents, getNumberOfVariants } from "./utils/variants";
 export default class Core {
   constructor({
     doenetML,
-    doenetId,
-    activityCid,
+    preliminarySerializedComponents,
+    activityId,
+    cid,
+    cidForActivity: activityCid,
     pageNumber,
     attemptNumber = 1,
     itemNumber = 1,
@@ -49,17 +55,20 @@ export default class Core {
     stateVariableChanges = {},
     coreId,
     updateDataOnContentChange,
+    apiURLs = {},
   }) {
     // console.time('core');
 
     this.coreId = coreId;
-    this.doenetId = doenetId;
+    this.activityId = activityId;
     this.activityCid = activityCid;
     this.pageNumber = pageNumber;
     this.attemptNumber = attemptNumber;
     this.itemNumber = itemNumber;
     this.activityVariantIndex = activityVariantIndex;
     this.doenetML = doenetML;
+    this.cid = cid;
+    this.apiURLs = apiURLs;
 
     this.serverSaveId = serverSaveId;
     this.updateDataOnContentChange = updateDataOnContentChange;
@@ -130,6 +139,12 @@ export default class Core {
       stateVariablesToEvaluate: [],
     };
 
+    this.errorWarnings = {
+      errors: [],
+      warnings: [],
+    };
+    this.newErrorWarning = true;
+
     this.cumulativeStateVariableChanges = JSON.parse(
       JSON.stringify(
         stateVariableChanges,
@@ -181,15 +196,13 @@ export default class Core {
       }
     };
 
-    cidFromText(doenetML)
-      .then((cid) =>
-        serializeFunctions.expandDoenetMLsToFullSerializedComponents({
-          cids: [cid],
-          doenetMLs: [doenetML],
-          componentInfoObjects: this.componentInfoObjects,
-          flags: this.flags,
-        }),
-      )
+    serializeFunctions
+      .expandDoenetMLsToFullSerializedComponents({
+        doenetMLs: [doenetML],
+        preliminarySerializedComponents: [preliminarySerializedComponents],
+        componentInfoObjects: this.componentInfoObjects,
+        flags: this.flags,
+      })
       .then(this.finishCoreConstruction)
       .catch((e) => {
         // throw e;
@@ -202,21 +215,27 @@ export default class Core {
   }
 
   async finishCoreConstruction({
-    cids,
     fullSerializedComponents,
     allDoenetMLs,
+    errors,
+    warnings,
   }) {
-    this.cid = cids[0];
     this.allDoenetMLs = allDoenetMLs;
+    this.doenetMLNewlines = findAllNewlines(allDoenetMLs[0]);
+
+    this.errorWarnings.errors.push(...errors);
+    this.errorWarnings.warnings.push(...warnings);
 
     let serializedComponents = fullSerializedComponents[0];
 
     serializeFunctions.addDocumentIfItsMissing(serializedComponents);
 
-    serializeFunctions.createComponentNames({
+    let res = serializeFunctions.createComponentNames({
       serializedComponents,
       componentInfoObjects: this.componentInfoObjects,
     });
+    this.errorWarnings.errors.push(...res.errors);
+    this.errorWarnings.warnings.push(...res.warnings);
 
     // console.log(`serialized components at the beginning`)
     // console.log(deepClone(serializedComponents));
@@ -302,10 +321,10 @@ export default class Core {
 
     // console.timeEnd('serialize doenetML');
 
-    let numVariants = getNumberOfVariants({
+    let numVariants = getNumVariants({
       serializedComponent: serializedComponents[0],
       componentInfoObjects: this.componentInfoObjects,
-    }).numberOfVariants;
+    }).numVariants;
 
     if (!this.requestedVariant) {
       // don't have full variant, just requested variant index
@@ -439,7 +458,6 @@ export default class Core {
       // so that will get credit for viewing the page
       this.saveSubmissions({
         pageCreditAchieved: await this.document.stateValues.creditAchieved,
-        suppressToast: true,
       });
     }
 
@@ -458,10 +476,27 @@ export default class Core {
       },
     });
 
+    // warning if there are any children that are unmatched
+    if (Object.keys(this.unmatchedChildren).length > 0) {
+      for (let componentName in this.unmatchedChildren) {
+        let parent = this._components[componentName];
+        this.errorWarnings.warnings.push({
+          message: this.unmatchedChildren[componentName].message,
+          level: 1,
+          doenetMLrange: parent.doenetMLrange,
+        });
+        this.newErrorWarning = true;
+      }
+    }
+
     postMessage({
       messageType: "coreCreated",
       coreId: this.coreId,
     });
+
+    if (this.newErrorWarning) {
+      this.postErrorWarnings();
+    }
   }
 
   async postUpdateRenderers(args, init = false) {
@@ -470,6 +505,41 @@ export default class Core {
       coreId: this.coreId,
       args,
       init,
+    });
+
+    if (this.newErrorWarning) {
+      this.postErrorWarnings();
+    }
+  }
+
+  postErrorWarnings() {
+    // keep only the last warnings
+    let warningLimit = 1000;
+    this.errorWarnings.warnings = this.errorWarnings.warnings.slice(
+      -warningLimit,
+    );
+
+    for (let errorWarning of [
+      ...this.errorWarnings.errors,
+      ...this.errorWarnings.warnings,
+    ]) {
+      let doenetMLrange = errorWarning.doenetMLrange;
+      if (
+        doenetMLrange?.doenetMLId === 0 &&
+        doenetMLrange.lineBegin === undefined
+      ) {
+        Object.assign(
+          doenetMLrange,
+          getLineCharRange(doenetMLrange, this.doenetMLNewlines),
+        );
+      }
+    }
+
+    this.newErrorWarning = false;
+
+    postMessage({
+      messageType: "setErrorWarnings",
+      errorWarnings: this.errorWarnings,
     });
   }
 
@@ -491,9 +561,11 @@ export default class Core {
     if (!initialAdd) {
       parent = this._components[parentName];
       if (!parent) {
-        console.warn(
-          `Cannot add children to parent ${parentName} as ${parentName} does not exist`,
-        );
+        this.errorWarnings.warnings.push({
+          message: `Cannot add children to parent ${parentName} as ${parentName} does not exist`,
+          level: 1,
+        });
+        this.newErrorWarning = true;
         return [];
       }
 
@@ -1241,8 +1313,7 @@ export default class Core {
   }) {
     let newComponents = [];
 
-    //TODO: last message
-    let lastMessage = "";
+    let lastErrorMessage = "";
 
     for (let [
       componentInd,
@@ -1273,10 +1344,29 @@ export default class Core {
           serializedComponent.componentType
         ];
       if (componentClass === undefined) {
-        throw Error(
-          "Cannot create component of type " +
-            serializedComponent.componentType,
+        // Note: This error shouldn't get reached from author-typed code,
+        // as it should get caught by the correctComponentTypeCapitalization function.
+        // However, it could get called from Javascript if developers
+        // create a serialized component that doesn't exist.
+        let message = `Invalid component type: <${serializedComponent.componentType}>.`;
+        let doenetMLrange = serializedComponent.doenetMLrange;
+
+        this.newErrorWarning = true;
+        this.errorWarnings.errors.push({
+          message,
+          doenetMLrange,
+        });
+        serializeFunctions.convertToErrorComponent(
+          serializedComponent,
+          message,
         );
+
+        lastErrorMessage = message;
+
+        componentClass =
+          this.componentInfoObjects.allComponentClasses[
+            serializedComponent.componentType
+          ];
       }
 
       if (!serializedComponent.doenetAttributes) {
@@ -1315,17 +1405,23 @@ export default class Core {
         shadow,
         namespaceForUnamed,
         componentsReplacementOf,
+        componentInd,
       });
 
       let newComponent = createResult.newComponent;
       newComponents.push(newComponent);
 
-      // TODO: need to get message
-      //lastMessage = createResult.lastMessage;
+      if (createResult.lastErrorMessage) {
+        lastErrorMessage = createResult.lastErrorMessage;
+      }
+
       // console.timeLog('core','<-Bottom serializedComponents ',serializedComponent.componentName);
     }
 
-    let results = { components: newComponents };
+    let results = {
+      components: newComponents,
+      lastErrorMessage,
+    };
 
     return results;
   }
@@ -1338,7 +1434,73 @@ export default class Core {
     shadow = false,
     namespaceForUnamed = "/",
     componentsReplacementOf,
+    componentInd,
   }) {
+    let lastErrorMessage = "";
+    let lastErrorMessageFromAttribute = "";
+
+    // Check for a component name collision before recursing to children,
+    // as children may have randomly generated names which will also collide
+    // if this component's name collides,
+    // and we want the mesage to be based on a name that will appear in the DoenetML document.
+    if (componentName in this._components) {
+      let lastSlash = componentName.lastIndexOf("/");
+      let originalName = componentName.slice(lastSlash + 1);
+
+      let parentName = ancestors[0].componentName;
+      let longNameId = parentName + "|";
+
+      if (serializedComponent.uniqueIdentifier) {
+        longNameId += serializedComponent.uniqueIdentifier;
+      } else {
+        longNameId += componentInd;
+      }
+
+      componentName = createUniqueName(
+        serializedComponent.componentType.toLowerCase(),
+        longNameId,
+      );
+
+      // add namespace
+      componentName = namespaceForUnamed + componentName;
+
+      // if already was an error, don't change anything other than the componentName for the error
+      // as we don't want to add another error and the original error message was correct.
+      if (componentClass.componentType !== "_error") {
+        let doenetMLrange = serializedComponent.doenetMLrange;
+        if (serializedComponent.downstreamDependencies) {
+          for (let name in serializedComponent.downstreamDependencies) {
+            let depArray = serializedComponent.downstreamDependencies[name];
+            for (let dep of depArray) {
+              if (dep.dependencyType === "referenceShadow") {
+                let fromComposite = this.components[dep.compositeName];
+                doenetMLrange = fromComposite.doenetMLrange;
+              }
+            }
+          }
+        }
+
+        let message = `Duplicate component name: ${originalName}.`;
+        serializeFunctions.convertToErrorComponent(
+          serializedComponent,
+          message,
+        );
+        componentClass =
+          this.componentInfoObjects.allComponentClasses[
+            serializedComponent.componentType
+          ];
+        this.newErrorWarning = true;
+        this.errorWarnings.errors.push({
+          message,
+          doenetMLrange,
+        });
+
+        // delete children, as they could have automatically generated names
+        // that would be based on the parent name, and hence also conflict
+        delete serializedComponent.children;
+      }
+    }
+
     // first recursively create children and attribute components
     let serializedChildren = serializedComponent.children;
     let definingChildren = [];
@@ -1454,9 +1616,13 @@ export default class Core {
             ancestors: ancestorsForChildren,
             shadow,
             namespaceForUnamed,
+            componentsReplacementOf,
           });
 
           definingChildren = childrenResult.components;
+          if (childrenResult.lastErrorMessage) {
+            lastErrorMessage = childrenResult.lastErrorMessage;
+          }
         }
       } else {
         //create all children
@@ -1466,9 +1632,13 @@ export default class Core {
           ancestors: ancestorsForChildren,
           shadow,
           namespaceForUnamed,
+          componentsReplacementOf,
         });
 
         definingChildren = childrenResult.components;
+        if (childrenResult.lastErrorMessage) {
+          lastErrorMessage = childrenResult.lastErrorMessage;
+        }
       }
     }
 
@@ -1486,8 +1656,14 @@ export default class Core {
             ancestors: ancestorsForChildren,
             shadow,
             namespaceForUnamed,
+            componentsReplacementOf,
             createNameContext: `attribute|${attrName}`,
           });
+
+          if (attrResult.lastErrorMessage) {
+            lastErrorMessage = attrResult.lastErrorMessage;
+            lastErrorMessageFromAttribute = attrResult.lastErrorMessage;
+          }
 
           attributes[attrName] = { component: attrResult.components[0] };
         } else {
@@ -1496,13 +1672,51 @@ export default class Core {
       }
     }
 
+    if (serializedComponent.componentType === "_error") {
+      lastErrorMessage = serializedComponent.state.message;
+    } else if (
+      lastErrorMessageFromAttribute ||
+      (lastErrorMessage && !componentClass.canDisplayChildErrors)
+    ) {
+      // We have to deal with two special cases where errors wouldn't be displayed:
+      // 1. there is an error message from an attribute, or
+      // 2. this component cannot display errors from children
+      // In these cases, we turn this component into an error component
+      // to ensure the error message is displayed.
+      serializeFunctions.convertToErrorComponent(
+        serializedComponent,
+        lastErrorMessage,
+      );
+      attributes = {};
+      componentClass =
+        this.componentInfoObjects.allComponentClasses[
+          serializedComponent.componentType
+        ];
+    }
+
     let prescribedDependencies = {};
 
     if (serializedComponent.downstreamDependencies) {
-      Object.assign(
-        prescribedDependencies,
-        serializedComponent.downstreamDependencies,
-      );
+      for (let name in serializedComponent.downstreamDependencies) {
+        if (name === componentName) {
+          throw Error(
+            this.dependencies.getCircularDependencyMessage([
+              serializedComponent,
+            ]),
+          );
+        }
+        if (this.components[name]) {
+          prescribedDependencies[name] =
+            serializedComponent.downstreamDependencies[name];
+        } else {
+          let message = this.dependencies.getCircularDependencyMessage([
+            serializedComponent,
+          ]);
+
+          message = "Possible c" + message.substring(1);
+          throw Error(message);
+        }
+      }
     }
 
     let stateVariableDefinitions = await this.createStateVariableDefinitions({
@@ -1564,6 +1778,16 @@ export default class Core {
           }
           shadowedComponent.shadowedBy.push(newComponent);
 
+          let mediatingShadowComposite =
+            this._components[shadowInfo.compositeName];
+          if (!mediatingShadowComposite.mediatesShadows) {
+            mediatingShadowComposite.mediatesShadows = [];
+          }
+          mediatingShadowComposite.mediatesShadows.push({
+            shadowing: newComponent.componentName,
+            shadowed: name,
+          });
+
           if (dep.isPrimaryShadow) {
             shadowedComponent.primaryShadow = newComponent.componentName;
 
@@ -1620,7 +1844,7 @@ export default class Core {
     // remove a level from parameter stack;
     this.parameterStack.pop();
 
-    let results = { newComponent: newComponent };
+    let results = { newComponent: newComponent, lastErrorMessage };
 
     return results;
   }
@@ -1780,23 +2004,37 @@ export default class Core {
     } else {
       parent.childrenMatchedWithPlaceholders = false;
       parent.matchedCompositeChildrenWithPlaceholders = true;
+
       let unmatchedChildrenTypes = [];
       for (let child of childGroupResults.unmatchedChildren) {
-        unmatchedChildrenTypes.push(child.componentType);
-        if (
-          this.componentInfoObjects.isInheritedComponentType({
-            inheritedComponentType: child.componentType,
-            baseComponentType: "_composite",
-          })
-        ) {
-          parent.matchedCompositeChildrenWithPlaceholders = false;
+        if (typeof child === "string") {
+          unmatchedChildrenTypes.push("string");
+        } else {
+          unmatchedChildrenTypes.push("<" + child.componentType + ">");
+          if (
+            this.componentInfoObjects.isInheritedComponentType({
+              inheritedComponentType: child.componentType,
+              baseComponentType: "_composite",
+            })
+          ) {
+            parent.matchedCompositeChildrenWithPlaceholders = false;
+          }
         }
       }
-      this.unmatchedChildren[parent.componentName] = {
-        message: `invalid children of type(s): ${unmatchedChildrenTypes.join(
-          ", ",
-        )}`,
-      };
+
+      if (parent.doenetAttributes.isAttributeChildFor) {
+        let attributeForComponentType =
+          parent.ancestors[0].componentClass.componentType;
+        this.unmatchedChildren[parent.componentName] = {
+          message: `Invalid format for attribute ${parent.doenetAttributes.isAttributeChildFor} of <${attributeForComponentType}>.`,
+        };
+      } else {
+        this.unmatchedChildren[parent.componentName] = {
+          message: `Invalid children for <${
+            parent.componentType
+          }>: Found invalid children: ${unmatchedChildrenTypes.join(", ")}`,
+        };
+      }
     }
 
     await this.dependencies.addBlockersFromChangedActiveChildren({ parent });
@@ -2112,6 +2350,7 @@ export default class Core {
         }
 
         newSerializedChild.adaptedFrom = originalChild.componentName;
+        assignDoenetMLRange([newSerializedChild], originalChild.doenetMLrange);
         let newChildrenResult = await this.createIsolatedComponentsSub({
           serializedComponents: [newSerializedChild],
           shadow: true,
@@ -2239,7 +2478,18 @@ export default class Core {
         this.publicCaseInsensitiveAliasSubstitutions.bind(this),
     });
 
-    // console.log(`expand result for ${component.componentName}`)
+    let doenetMLrange = this.components[component.componentName].doenetMLrange;
+    let overwriteDoenetMLRange = component.componentType === "copy";
+
+    this.gatherErrorsAndAssignDoenetMLRange({
+      components: result.replacements,
+      errors: result.errors,
+      warnings: result.warnings,
+      doenetMLrange,
+      overwriteDoenetMLRange,
+    });
+
+    // console.log(`expand result for ${component.componentName}`);
     // console.log(JSON.parse(JSON.stringify(result)));
 
     if (component.constructor.stateVariableToEvaluateAfterReplacements) {
@@ -2285,6 +2535,27 @@ export default class Core {
     return { success: true, compositesExpanded: [component.componentName] };
   }
 
+  gatherErrorsAndAssignDoenetMLRange({
+    components,
+    errors,
+    warnings,
+    doenetMLrange,
+    overwriteDoenetMLRange = false,
+  }) {
+    assignDoenetMLRange(components, doenetMLrange, overwriteDoenetMLRange);
+    assignDoenetMLRange(errors, doenetMLrange);
+    assignDoenetMLRange(warnings, doenetMLrange);
+
+    if (errors.length > 0) {
+      this.errorWarnings.errors.push(...errors);
+      this.newErrorWarning = true;
+    }
+    if (warnings.length > 0) {
+      this.errorWarnings.warnings.push(...warnings);
+      this.newErrorWarning = true;
+    }
+  }
+
   async expandShadowingComposite(component) {
     // console.log(`expand shadowing composite, ${component.componentName}`)
 
@@ -2293,7 +2564,7 @@ export default class Core {
         component.shadows.componentName,
       )
     ) {
-      // found a circular reference,
+      // found a circular dependency,
       // as we are in the middle of expanding a composite
       // that we are now trying to shadow
       let compositeInvolved = this._components[component.shadows.componentName];
@@ -2303,7 +2574,7 @@ export default class Core {
           this._components[compositeInvolved.shadows.componentName];
       }
       throw Error(
-        `Circular reference involving ${compositeInvolved.componentName}`,
+        `Circular dependency involving ${compositeInvolved.componentName}.`,
       );
     }
 
@@ -2391,9 +2662,58 @@ export default class Core {
     // console.log(`name of composite shadowing: ${component.componentName}`)
     // console.log(`name of shadowed composite: ${shadowedComposite.componentName}`)
 
+    let compositeMediatingTheShadow =
+      this.components[nameOfCompositeMediatingTheShadow];
+
+    // If shadowed composite mediates the shadow of compositeMediatingTheShadow,
+    // then we have a circular reference.
+    // mediatesShadows is an array of objects with keys shadows and shadowed,
+    // that the shadow mediated by the component.
+    // We check if shadowedComposite mediates the shadow of compositeMediatingTheShadow,
+    // or, recursively, if one of those shadowed components
+    // mediates the shadow of compositeMediatingTheShadow
+
+    let foundCircular = false;
+    let shadowedByShadowed = shadowedComposite.mediatesShadows?.map(
+      (v) => v.shadowed,
+    );
+
+    while (shadowedByShadowed?.length > 0) {
+      if (shadowedByShadowed.includes(nameOfCompositeMediatingTheShadow)) {
+        foundCircular = true;
+        let message = "Circular dependency detected";
+        if (component.attributes.createComponentOfType?.primitive) {
+          message += ` involving <${component.attributes.createComponentOfType.primitive}> component`;
+        }
+        message += ".";
+        serializedReplacements = [
+          {
+            componentType: "_error",
+            state: { message },
+            doenetMLrange: compositeMediatingTheShadow.doenetMLrange,
+          },
+        ];
+        this.errorWarnings.errors.push({
+          message,
+          doenetMLrange: compositeMediatingTheShadow.doenetMLrange,
+        });
+
+        break;
+      }
+
+      // recurse to check if one the shadowed components mediates
+      // the shadow of compositeMediatingTheShadow
+      shadowedByShadowed = shadowedByShadowed.reduce((acc, cName) => {
+        let comp = this.components[cName];
+        if (comp.mediatesShadows) {
+          return [...acc, ...comp.mediatesShadows.map((v) => v.shadowed)];
+        } else {
+          return acc;
+        }
+      }, []);
+    }
+
     if (component.constructor.assignNamesToReplacements) {
-      let compositeMediatingTheShadow =
-        this.components[nameOfCompositeMediatingTheShadow];
       let mediatingNewNamespace =
         compositeMediatingTheShadow.attributes.newNamespace?.primitive;
       let mediatingAssignNames =
@@ -2459,6 +2779,14 @@ export default class Core {
         shadowingComposite: true,
       });
 
+      let doenetMLrange = compositeMediatingTheShadow.doenetMLrange;
+      this.gatherErrorsAndAssignDoenetMLRange({
+        components: processResult.serializedComponents,
+        errors: processResult.errors,
+        warnings: processResult.warnings,
+        doenetMLrange,
+      });
+
       serializedReplacements = processResult.serializedComponents;
 
       if (
@@ -2491,6 +2819,14 @@ export default class Core {
           originalNamesAreConsistent: true,
         });
 
+        let doenetMLrange = compositeMediatingTheShadow.doenetMLrange;
+        this.gatherErrorsAndAssignDoenetMLRange({
+          components: processResult.serializedComponents,
+          errors: processResult.errors,
+          warnings: processResult.warnings,
+          doenetMLrange,
+        });
+
         serializedReplacements.push(...processResult.serializedComponents);
       }
     } else {
@@ -2508,19 +2844,41 @@ export default class Core {
         shadowingComposite: true,
       });
 
+      let doenetMLrange = compositeMediatingTheShadow.doenetMLrange;
+      this.gatherErrorsAndAssignDoenetMLRange({
+        components: processResult.serializedComponents,
+        errors: processResult.errors,
+        warnings: processResult.warnings,
+        doenetMLrange,
+      });
+
       serializedReplacements = processResult.serializedComponents;
     }
 
-    let verificationResult = await verifyReplacementsMatchSpecifiedType({
-      component,
-      replacements: serializedReplacements,
-      assignNames: component.doenetAttributes.assignNames,
-      componentInfoObjects: this.componentInfoObjects,
-      compositeAttributesObj: component.constructor.createAttributesObject(),
-      flags: this.flags,
-    });
+    if (!foundCircular) {
+      let verificationResult = await verifyReplacementsMatchSpecifiedType({
+        component,
+        replacements: serializedReplacements,
+        assignNames: component.doenetAttributes.assignNames,
+        componentInfoObjects: this.componentInfoObjects,
+        compositeAttributesObj: component.constructor.createAttributesObject(),
+        flags: this.flags,
+        components: this._components,
+        publicCaseInsensitiveAliasSubstitutions:
+          this.publicCaseInsensitiveAliasSubstitutions.bind(this),
+      });
 
-    serializedReplacements = verificationResult.replacements;
+      if (verificationResult.errors.length > 0) {
+        this.errorWarnings.errors.push(...verificationResult.errors);
+        this.newErrorWarning = true;
+      }
+      if (verificationResult.warnings.length > 0) {
+        this.errorWarnings.warnings.push(...verificationResult.warnings);
+        this.newErrorWarning = true;
+      }
+
+      serializedReplacements = verificationResult.replacements;
+    }
 
     // console.log(`serialized replacements for ${component.componentName} who is shadowing ${shadowedComposite.componentName}`);
     // console.log(deepClone(serializedReplacements));
@@ -2561,18 +2919,25 @@ export default class Core {
       namespaceForUnamed = getNamespaceFromName(component.componentName);
     }
 
-    let replacementResult = await this.createIsolatedComponentsSub({
-      serializedComponents: serializedReplacements,
-      ancestors: component.ancestors,
-      shadow: true,
-      createNameContext: component.componentName + "|replacements",
-      namespaceForUnamed,
-      componentsReplacementOf: component,
-    });
-
+    try {
+      let replacementResult = await this.createIsolatedComponentsSub({
+        serializedComponents: serializedReplacements,
+        ancestors: component.ancestors,
+        shadow: true,
+        createNameContext: component.componentName + "|replacements",
+        namespaceForUnamed,
+        componentsReplacementOf: component,
+      });
+      component.replacements = replacementResult.components;
+    } catch (e) {
+      component.replacements = await this.setErrorReplacements({
+        composite: component,
+        message: e.message,
+        namespaceForUnamed,
+      });
+    }
     this.parameterStack.pop();
 
-    component.replacements = replacementResult.components;
     await this.dependencies.addBlockersFromChangedReplacements(component);
 
     component.isExpanded = true;
@@ -2588,6 +2953,8 @@ export default class Core {
     delete parent.placeholderActiveChildrenIndices;
     delete parent.placeholderActiveChildrenIndicesByComposite;
     delete parent.compositeReplacementActiveRange;
+
+    let undisplayableErrorChildren;
 
     let nPlaceholdersAdded = 0;
 
@@ -2696,6 +3063,28 @@ export default class Core {
           }
         }
 
+        if (
+          replacements.some((repl) => repl.componentType === "_error") &&
+          !parent.constructor.canDisplayChildErrors
+        ) {
+          // The composite returned an error but this parent cannot display child errors,
+          // so remove it from the replacements
+          // (to avoid a confusing warning about an invalid _error child)
+          // and store it in undisplayableErrorChildren.
+          // We will add these error children to an ancestor that can display them, below.
+
+          if (!undisplayableErrorChildren) {
+            undisplayableErrorChildren = [];
+          }
+          let errorReplacements = replacements.filter(
+            (repl) => repl.componentType === "_error",
+          );
+          replacements = replacements.filter(
+            (repl) => repl.componentType !== "_error",
+          );
+          undisplayableErrorChildren.push(...errorReplacements);
+        }
+
         parent.compositeReplacementActiveRange.push({
           compositeName: child.componentName,
           target: await child.stateValues.target,
@@ -2751,6 +3140,55 @@ export default class Core {
         childInd--;
       }
     }
+
+    if (undisplayableErrorChildren) {
+      await this.addUndisplayableErrorChildrenToAncestor(
+        parent,
+        undisplayableErrorChildren,
+      );
+    }
+  }
+
+  async addUndisplayableErrorChildrenToAncestor(
+    parent,
+    undisplayableErrorChildren,
+  ) {
+    // If parent had an error added by a composite, but it can't display errors,
+    // then look for an ancestor that can display errors
+    // (which will exist since document can display errors).
+    // Add the errors to the defining children of that ancestor.
+    // Note: this breaks the rules of DoenetML and
+    // it is possible that these errors will accumulate in the ancestor
+    // if this code is repeated. But, the DoenetML is broken anyway with errors,
+    // and the purpose is just to make sure that the error is prominently displayed.
+
+    let ancestorToDisplayErrors = parent;
+    let definingChildIndToAddError;
+    while (!ancestorToDisplayErrors.constructor.canDisplayChildErrors) {
+      let nextAncestor = this._components[ancestorToDisplayErrors.parentName];
+
+      definingChildIndToAddError = nextAncestor.definingChildren.indexOf(
+        ancestorToDisplayErrors,
+      );
+
+      ancestorToDisplayErrors = nextAncestor;
+    }
+
+    // if child wasn't a defining child, put the error as the first child
+    if (definingChildIndToAddError === -1) {
+      definingChildIndToAddError = 0;
+    }
+
+    ancestorToDisplayErrors.definingChildren.splice(
+      definingChildIndToAddError,
+      0,
+      ...undisplayableErrorChildren,
+    );
+
+    await this.processNewDefiningChildren({
+      parent: ancestorToDisplayErrors,
+      expandComposites: false,
+    });
   }
 
   async markWithheldReplacementsInactive(composite) {
@@ -2857,7 +3295,7 @@ export default class Core {
         for (let dep of depArray) {
           if (dep.dependencyType === "referenceShadow") {
             if (name === componentName) {
-              throw Error(`circular reference involving ${componentName}`);
+              throw Error(`Circular dependency involving ${componentName}.`);
             }
             redefineDependencies = {
               linkSource: "referenceShadow",
@@ -2994,7 +3432,7 @@ export default class Core {
           attributeSpecification.componentStateVariableForAttributeValue;
         if (stateVariableForAttributeValue === undefined) {
           stateVariableForAttributeValue =
-            attributeClass.stateVariableForAttributeValue;
+            attributeClass.stateVariableToBeShadowed;
           if (stateVariableForAttributeValue === undefined) {
             stateVariableForAttributeValue = "value";
           }
@@ -3069,15 +3507,16 @@ export default class Core {
           }
         }
 
-        attributeValue = validateAttributeValue({
+        let res = validateAttributeValue({
           value: attributeValue,
           attributeSpecification,
           attribute: attrName,
         });
 
         return {
-          setValue: { [varName]: attributeValue },
+          setValue: { [varName]: res.value },
           checkForActualChange: { [varName]: true },
+          sendWarnings: res.warnings,
         };
       };
 
@@ -3120,7 +3559,7 @@ export default class Core {
             } else {
               // no component or primitive, so value is essential and give it the desired value, but validated
 
-              let attributeValue = validateAttributeValue({
+              let res = validateAttributeValue({
                 value: desiredStateVariableValues[varName],
                 attributeSpecification,
                 attribute: attrName,
@@ -3131,9 +3570,10 @@ export default class Core {
                 instructions: [
                   {
                     setEssentialValue: varName,
-                    value: attributeValue,
+                    value: res.value,
                   },
                 ],
+                sendWarnings: res.warnings,
               };
             }
           }
@@ -3160,6 +3600,7 @@ export default class Core {
         "triggerActionOnChange",
         "ignoreFixed",
         "isLocation",
+        "essentialVarName",
       ];
 
       for (let attrName2 of attributesToCopy) {
@@ -3296,6 +3737,7 @@ export default class Core {
         "propagateToProps",
         "ignoreFixed",
         "isLocation",
+        "essentialVarName",
       ];
 
       for (let attrName2 of attributesToCopy) {
@@ -3372,6 +3814,7 @@ export default class Core {
     componentClass,
   }) {
     let targetComponent = this._components[redefineDependencies.targetName];
+    let core = this;
 
     if (redefineDependencies.propVariable) {
       // if we have an array entry state variable that hasn't been created yet
@@ -3461,7 +3904,7 @@ export default class Core {
           attributeSpecification.componentStateVariableForAttributeValue;
         if (stateVariableForAttributeValue === undefined) {
           stateVariableForAttributeValue =
-            attributeClass.stateVariableForAttributeValue;
+            attributeClass.stateVariableToBeShadowed;
           if (stateVariableForAttributeValue === undefined) {
             stateVariableForAttributeValue = "value";
           }
@@ -3536,15 +3979,16 @@ export default class Core {
           }
         }
 
-        attributeValue = validateAttributeValue({
+        let res = validateAttributeValue({
           value: attributeValue,
           attributeSpecification,
           attribute: attrName,
         });
 
         return {
-          setValue: { [varName]: attributeValue },
+          setValue: { [varName]: res.value },
           checkForActualChange: { [varName]: true },
+          sendWarnings: res.warnings,
         };
       };
 
@@ -3552,6 +3996,7 @@ export default class Core {
         stateVarDef.inverseDefinition = async function ({
           desiredStateVariableValues,
           dependencyValues,
+          usedDefault,
           stateValues,
           workspace,
         }) {
@@ -3587,19 +4032,21 @@ export default class Core {
               };
             } else {
               // no component or primitive, so value is essential and give it the desired value, but validated
-              let attributeValue = validateAttributeValue({
+              let res = validateAttributeValue({
                 value: desiredStateVariableValues[varName],
                 attributeSpecification,
                 attribute: attrName,
               });
+
               return {
                 success: true,
                 instructions: [
                   {
                     setEssentialValue: varName,
-                    value: attributeValue,
+                    value: res.value,
                   },
                 ],
+                sendWarnings: res.warnings,
               };
             }
           }
@@ -3624,6 +4071,7 @@ export default class Core {
         "propagateToProps",
         "ignoreFixed",
         "isLocation",
+        "essentialVarName",
       ];
 
       for (let attrName2 of attributesToCopy) {
@@ -3684,9 +4132,24 @@ export default class Core {
           setDefault = true;
         }
 
+        let targetVariableIsArray =
+          targetComponent.state[redefineDependencies.propVariable].isArray;
+
         if (stateDef.set) {
           stateDef.definition = function ({ dependencyValues, usedDefault }) {
-            let valueFromTarget = stateDef.set(dependencyValues.targetVariable);
+            let targetVariable = dependencyValues.targetVariable;
+            if (
+              targetVariable === undefined ||
+              (targetVariableIsArray && targetVariable.length === 0)
+            ) {
+              // allow for case where we depend on array entry that does not yet exist
+              return {
+                useEssentialOrDefaultValue: {
+                  [primaryStateVariableForDefinition]: true,
+                },
+              };
+            }
+            let valueFromTarget = stateDef.set(targetVariable);
             if (setDefault && usedDefault.targetVariable) {
               return {
                 useEssentialOrDefaultValue: {
@@ -3704,19 +4167,30 @@ export default class Core {
           };
         } else {
           stateDef.definition = function ({ dependencyValues, usedDefault }) {
+            let targetVariable = dependencyValues.targetVariable;
+            if (
+              targetVariable === undefined ||
+              (targetVariableIsArray && targetVariable.length === 0)
+            ) {
+              // allow for case where we depend on array entry that does not yet exist
+              return {
+                useEssentialOrDefaultValue: {
+                  [primaryStateVariableForDefinition]: true,
+                },
+              };
+            }
             if (setDefault && usedDefault.targetVariable) {
               return {
                 useEssentialOrDefaultValue: {
                   [primaryStateVariableForDefinition]: {
-                    defaultValue: dependencyValues.targetVariable,
+                    defaultValue: targetVariable,
                   },
                 },
               };
             }
             return {
               setValue: {
-                [primaryStateVariableForDefinition]:
-                  dependencyValues.targetVariable,
+                [primaryStateVariableForDefinition]: targetVariable,
               },
             };
           };
@@ -4590,6 +5064,8 @@ export default class Core {
     //   that contains a given array key (if there are many, just return one)
     //   This variable may not yet be created.
 
+    let core = this;
+
     stateVarObj.arrayValues = [];
 
     if (stateVarObj.numDimensions === undefined) {
@@ -4615,9 +5091,13 @@ export default class Core {
         let index = stateVarObj.keyToIndex(arrayKey);
         let numDimensionsInArrayKey = index.length;
         if (!numDimensionsInArrayKey > stateVarObj.numDimensions) {
-          console.warn(
-            "Cannot set array value.  Number of dimensions is too large.",
-          );
+          core.errorWarnings.warnings.push({
+            message:
+              "Cannot set array value.  Number of dimensions is too large.",
+            level: 2,
+            doenetMLrange: component.doenetMLrange,
+          });
+          core.newErrorWarning = true;
           return { nFailures: 1 };
         }
         let arrayValuesDrillDown = arrayValues;
@@ -4630,7 +5110,12 @@ export default class Core {
             arrayValuesDrillDown = arrayValuesDrillDown[indComponent];
             arraySizeDrillDown = arraySizeDrillDown.slice(1);
           } else {
-            console.warn("ignore setting array value out of bounds");
+            core.errorWarnings.warnings.push({
+              message: "ignore setting array value out of bounds",
+              level: 2,
+              doenetMLrange: component.doenetMLrange,
+            });
+            core.newErrorWarning = true;
             return { nFailures: 1 };
           }
         }
@@ -4642,7 +5127,7 @@ export default class Core {
           // then attempt to get additional dimensions from
           // array indices of value
 
-          function setArrayValuesPiece(
+          let setArrayValuesPiece = function (
             desiredValue,
             arrayValuesPiece,
             arraySizePiece,
@@ -4651,9 +5136,12 @@ export default class Core {
             // given that size of arrayValuesPieces is arraySizePiece
 
             if (!Array.isArray(desiredValue)) {
-              console.warn(
-                "ignoring array values with insufficient dimensions",
-              );
+              core.errorWarnings.warnings.push({
+                message: "ignoring array values with insufficient dimensions",
+                level: 2,
+                doenetMLrange: component.doenetMLrange,
+              });
+              core.newErrorWarning = true;
               return { nFailures: 1 };
             }
 
@@ -4661,7 +5149,12 @@ export default class Core {
 
             let currentSize = arraySizePiece[0];
             if (desiredValue.length > currentSize) {
-              console.warn("ignoring array values of out bounds");
+              core.errorWarnings.warnings.push({
+                message: "ignoring array values of out bounds",
+                level: 2,
+                doenetMLrange: component.doenetMLrange,
+              });
+              core.newErrorWarning = true;
               nFailuresSub += desiredValue.length - currentSize;
               desiredValue = desiredValue.slice(0, currentSize);
             }
@@ -4686,7 +5179,7 @@ export default class Core {
             }
 
             return { nFailures: nFailuresSub };
-          }
+          };
 
           let result = setArrayValuesPiece(
             value,
@@ -4823,9 +5316,12 @@ export default class Core {
           arrayValues[ind] = value;
           return { nFailures: 0 };
         } else {
-          console.warn(
-            `Ignoring setting array values out of bounds: ${arrayKey} of ${stateVariable}`,
-          );
+          core.errorWarnings.warnings.push({
+            message: `Ignoring setting array values out of bounds: ${arrayKey} of ${stateVariable}`,
+            level: 2,
+            doenetMLrange: component.doenetMLrange,
+          });
+          core.newErrorWarning = true;
           return { nFailures: 1 };
         }
       };
@@ -5404,16 +5900,16 @@ export default class Core {
 
         args.dependencyNamesByKey = stateVarObj.dependencyNames.namesByKey;
 
-        // only include array keys that exist
-        // unless given a Javascript array
-        let newDesiredStateVariableValues = {};
-        for (let vName in args.desiredStateVariableValues) {
-          if (Array.isArray(args.desiredStateVariableValues[vName])) {
-            newDesiredStateVariableValues[vName] =
-              args.desiredStateVariableValues[vName];
-          } else {
+        if (!stateVarObj.allowExtraArrayKeysInInverse) {
+          // by default, inverseArrayDefinitionByKey does not need to be
+          // programmed defensively against arrayKeys that don't exist
+          // as they are filtered out here.
+          // However, if allowExtraArrayKeysInInverse, then we skip this
+          // filtering to allow the possibility that the array size
+          // could be changed.
+          let newDesiredStateVariableValues = {};
+          for (let vName in args.desiredStateVariableValues) {
             newDesiredStateVariableValues[vName] = {};
-
             for (let key in args.desiredStateVariableValues[vName]) {
               if (args.arrayKeys.includes(key)) {
                 newDesiredStateVariableValues[vName][key] =
@@ -5421,25 +5917,8 @@ export default class Core {
               }
             }
           }
+          args.desiredStateVariableValues = newDesiredStateVariableValues;
         }
-        args.desiredStateVariableValues = newDesiredStateVariableValues;
-
-        // args.arraySize = stateVarObj.arraySize;
-
-        // let arrayKeysToInvert = [];
-        // for (let arrayKey of args.arrayKeys) {
-        //   // only invert if
-        //   // - found all dependency values for array key (i.e., have calculated dependencies for arrayKey)
-        //   if (foundAllDependencyValuesForKey[arrayKey]) {
-        //     arrayKeysToInvert.push(arrayKey);
-        //   }
-        // }
-
-        // if (arrayKeysToInvert.length === 0) {
-        //   return {};
-        // }
-
-        // args.arrayKeys = arrayKeysToInvert;
 
         let result = stateVarObj.inverseArrayDefinitionByKey(args);
         // console.log(`result of inverse definition of array`)
@@ -5627,17 +6106,23 @@ export default class Core {
           varName,
         );
       } else {
-        console.warn(
-          `Cannot get propIndex from ${varName} of ${component.componentName} as it is not an array or array entry state variable`,
-        );
+        this.errorWarnings.warnings.push({
+          message: `Cannot get propIndex from ${varName} of ${component.componentName} as it is not an array or array entry state variable`,
+          level: 1,
+          doenetMLrange: component.doenetMLrange,
+        });
+        this.newErrorWarning = true;
         newName = varName;
       }
       if (newName) {
         newVarNames.push(newName);
       } else {
-        console.warn(
-          `Cannot get propIndex from ${varName} of ${component.componentName}`,
-        );
+        this.errorWarnings.warnings.push({
+          message: `Cannot get propIndex from ${varName} of ${component.componentName}`,
+          level: 1,
+          doenetMLrange: component.doenetMLrange,
+        });
+        this.newErrorWarning = true;
         newVarNames.push(varName);
       }
     }
@@ -6436,6 +6921,15 @@ export default class Core {
         }
         valuesChanged[varName].arraySizeChanged = true;
       }
+    }
+
+    if (result.sendWarnings && result.sendWarnings.length > 0) {
+      for (let warning of result.sendWarnings) {
+        warning.doenetMLrange = component.doenetMLrange;
+        this.errorWarnings.warnings.push(warning);
+      }
+
+      this.newErrorWarning = true;
     }
 
     for (let varName in receivedValue) {
@@ -7572,12 +8066,12 @@ export default class Core {
 
             if (result.updateRenderedChildren) {
               this.componentsWithChangedChildrenToRender.add(
-                component.componentName,
+                upDepComponent.componentName,
               );
             }
 
             if (result.updateDescendantRenderers) {
-              await this.markDescendantsToUpdateRenderers(component);
+              await this.markDescendantsToUpdateRenderers(upDepComponent);
             }
 
             if (result.updateActionChaining) {
@@ -7599,7 +8093,7 @@ export default class Core {
 
             if (result.updateDependencies) {
               for (let vName of result.updateDependencies) {
-                component.state[vName].needDependenciesUpdated = true;
+                upDepComponent.state[vName].needDependenciesUpdated = true;
               }
             }
 
@@ -7664,7 +8158,7 @@ export default class Core {
 
   registerComponent(component) {
     if (component.componentName in this._components) {
-      throw Error(`Duplicate componentName: ${component.componentName}`);
+      throw Error(`Duplicate component name: ${component.componentName}`);
     }
     this._components[component.componentName] = component;
   }
@@ -7769,6 +8263,14 @@ export default class Core {
           parentCreatesNewNamespace: shadowingNewNamespace,
           componentInfoObjects: this.componentInfoObjects,
           originalNamesAreConsistent,
+        });
+
+        let doenetMLrange = composite.doenetMLrange;
+        this.gatherErrorsAndAssignDoenetMLRange({
+          components: processResult.serializedComponents,
+          errors: processResult.errors,
+          warnings: processResult.warnings,
+          doenetMLrange,
         });
 
         shadowingSerializeChildren = processResult.serializedComponents;
@@ -8258,15 +8760,23 @@ export default class Core {
             namespaceForUnamed = getNamespaceFromName(component.componentName);
           }
 
-          let createResult = await this.createIsolatedComponentsSub({
-            serializedComponents: serializedReplacements,
-            ancestors: component.ancestors,
-            createNameContext: component.componentName + "|replacements",
-            namespaceForUnamed,
-            componentsReplacementOf: component,
-          });
+          try {
+            let createResult = await this.createIsolatedComponentsSub({
+              serializedComponents: serializedReplacements,
+              ancestors: component.ancestors,
+              createNameContext: component.componentName + "|replacements",
+              namespaceForUnamed,
+              componentsReplacementOf: component,
+            });
 
-          newComponents = createResult.components;
+            newComponents = createResult.components;
+          } catch (e) {
+            newComponents = await this.setErrorReplacements({
+              composite: component,
+              message: e.message,
+              namespaceForUnamed,
+            });
+          }
         } else {
           throw Error(`Invalid replacement change.`);
         }
@@ -8473,6 +8983,36 @@ export default class Core {
     };
 
     return results;
+  }
+
+  async setErrorReplacements({ composite, message, namespaceForUnamed }) {
+    // display error for replacements and set composite to error state
+
+    this.newErrorWarning = true;
+    this.errorWarnings.errors.push({
+      message,
+      doenetMLrange: composite.doenetMLrange,
+    });
+    let errorReplacements = [
+      {
+        componentType: "_error",
+        state: { message },
+        doenetAttributes: { createUniqueName: true },
+        doenetMLrange: composite.doenetMLrange,
+      },
+    ];
+
+    composite.isInErrorState = true;
+
+    let createResult = await this.createIsolatedComponentsSub({
+      serializedComponents: errorReplacements,
+      ancestors: composite.ancestors,
+      createNameContext: composite.componentName + "|replacements",
+      namespaceForUnamed,
+      componentsReplacementOf: composite,
+    });
+
+    return createResult.components;
   }
 
   async deleteReplacementsFromShadowsThenComposite({
@@ -8701,13 +9241,13 @@ export default class Core {
     ) {
       // If components shadowing componentToShadow increased
       // that means it is shadowed by one of its newly created replacements
-      // so we have a circular reference
+      // so we have a circular dependency
       throw Error(
-        `circular reference involving ${componentToShadow.componentName}`,
+        `Circular dependency involving ${componentToShadow.componentName}.`,
       );
     }
 
-    // use compositesBeingExpanded to look for circular dependence
+    // use compositesBeingExpanded to look for circular dependency
     this.updateInfo.compositesBeingExpanded.push(
       componentToShadow.componentName,
     );
@@ -8725,7 +9265,7 @@ export default class Core {
         )
       ) {
         throw Error(
-          `circular dependence involving ${shadowingComponent.componentName}`,
+          `Circular dependency involving ${shadowingComponent.componentName}.`,
         );
       }
 
@@ -8790,11 +9330,11 @@ export default class Core {
           }
         }
 
+        let nameOfCompositeMediatingTheShadow =
+          shadowingComponent.shadows.compositeName;
+        let compositeMediatingTheShadow =
+          this.components[nameOfCompositeMediatingTheShadow];
         if (shadowingComponent.constructor.assignNamesToReplacements) {
-          let nameOfCompositeMediatingTheShadow =
-            shadowingComponent.shadows.compositeName;
-          let compositeMediatingTheShadow =
-            this.components[nameOfCompositeMediatingTheShadow];
           let mediatingNewNamespace =
             compositeMediatingTheShadow.attributes.newNamespace?.primitive;
           let mediatingAssignNames =
@@ -8822,6 +9362,14 @@ export default class Core {
             originalNamesAreConsistent,
           });
 
+          let doenetMLrange = compositeMediatingTheShadow.doenetMLrange;
+          this.gatherErrorsAndAssignDoenetMLRange({
+            components: processResult.serializedComponents,
+            errors: processResult.errors,
+            warnings: processResult.warnings,
+            doenetMLrange,
+          });
+
           newSerializedReplacements = processResult.serializedComponents;
         } else {
           // since original names came from the targetComponent
@@ -8836,6 +9384,14 @@ export default class Core {
             parentCreatesNewNamespace: shadowingNewNamespace,
             componentInfoObjects: this.componentInfoObjects,
             originalNamesAreConsistent,
+          });
+
+          let doenetMLrange = compositeMediatingTheShadow.doenetMLrange;
+          this.gatherErrorsAndAssignDoenetMLRange({
+            components: processResult.serializedComponents,
+            errors: processResult.errors,
+            warnings: processResult.warnings,
+            doenetMLrange,
           });
 
           newSerializedReplacements = processResult.serializedComponents;
@@ -8862,17 +9418,25 @@ export default class Core {
           );
         }
 
-        let createResult = await this.createIsolatedComponentsSub({
-          serializedComponents: newSerializedReplacements,
-          ancestors: shadowingComponent.ancestors,
-          createNameContext: shadowingComponent.componentName + "|replacements",
-          namespaceForUnamed,
-          componentsReplacementOf: shadowingComponent,
-        });
+        try {
+          let createResult = await this.createIsolatedComponentsSub({
+            serializedComponents: newSerializedReplacements,
+            ancestors: shadowingComponent.ancestors,
+            createNameContext:
+              shadowingComponent.componentName + "|replacements",
+            namespaceForUnamed,
+            componentsReplacementOf: shadowingComponent,
+          });
+          newComponents = createResult.components;
+        } catch (e) {
+          newComponents = await this.setErrorReplacements({
+            composite: shadowingComponent,
+            message: e.message,
+            namespaceForUnamed,
+          });
+        }
 
         this.parameterStack.pop();
-
-        newComponents = createResult.components;
 
         let shadowingParent;
         if (parentToShadow) {
@@ -8929,7 +9493,7 @@ export default class Core {
     );
     if (targetInd === -1) {
       throw Error(
-        `Something is wrong as we lost track that we were expanding ${component.componentName}`,
+        `Something is wrong as we lost track that we were expanding ${componentToShadow.componentName}`,
       );
     }
     this.updateInfo.compositesBeingExpanded.splice(targetInd, 1);
@@ -9207,7 +9771,14 @@ export default class Core {
         if (!args) {
           args = {};
         }
-        return await action(args);
+        await action(args);
+        if (args.actionId) {
+          // Note: we no longer rely on the component to make sure resolve action is always called
+          // but always explicitly call resolve action after an action.
+          return this.resolveAction({ actionId: args.actionId });
+        } else {
+          return;
+        }
       }
     }
 
@@ -9231,9 +9802,12 @@ export default class Core {
     }
 
     if (component) {
-      console.warn(
-        `Cannot run action ${actionName} on component ${componentName}`,
-      );
+      this.errorWarnings.warnings.push({
+        message: `Cannot run action ${actionName} on component ${componentName}`,
+        level: 1,
+        doenetMLrange: component.doenetMLrange,
+      });
+      this.newErrorWarning = true;
     }
   }
 
@@ -9264,6 +9838,19 @@ export default class Core {
     this.updateInfo.componentsToUpdateActionChaining = {};
 
     let id = componentName;
+
+    while (id.substring(0, 3) === "/__") {
+      // if component was has a unreachable component name
+      // check if it is shadowing another component and use that component name instead
+      let comp = this._components[id];
+
+      if (comp.shadows) {
+        id = comp.shadows.componentName;
+      } else {
+        break;
+      }
+    }
+
     if (triggeringAction) {
       id += "|" + triggeringAction;
     }
@@ -9377,6 +9964,7 @@ export default class Core {
 
   async performUpdate({
     updateInstructions,
+    warnings,
     actionId,
     event,
     overrideReadOnly = false,
@@ -9384,8 +9972,12 @@ export default class Core {
     canSkipUpdatingRenderer = false,
     skipRendererUpdate = false,
     sourceInformation = {},
-    suppressToast = false, // temporary
   }) {
+    if (warnings && warnings.length > 0) {
+      this.errorWarnings.warnings.push(...warnings);
+      this.newErrorWarning = true;
+    }
+
     if (this.flags.readOnly && !overrideReadOnly) {
       if (!canSkipUpdatingRenderer) {
         for (let instruction of updateInstructions) {
@@ -9457,9 +10049,11 @@ export default class Core {
             if (component) {
               componentsToDelete.push(component);
             } else {
-              console.warn(
-                `Cannot delete ${componentName} as it doesn't exist.`,
-              );
+              this.errorWarnings.warnings.push({
+                message: `Cannot delete ${componentName} as it doesn't exist.`,
+                level: 2,
+              });
+              this.newErrorWarning = true;
             }
           }
 
@@ -9509,21 +10103,6 @@ export default class Core {
       await this.updateAllChangedRenderers(sourceInformation, actionId);
     }
 
-    // TODO: when should we actually warn of unmatchedChildren
-    // It shouldn't be just on update, but also on initial construction!
-    // Also, should be more than a console.warn
-    if (Object.keys(this.unmatchedChildren).length > 0) {
-      let childLogicMessage = "";
-      for (let componentName in this.unmatchedChildren) {
-        if (!this._components[componentName].isShadow) {
-          childLogicMessage += `Invalid children for ${componentName}: ${this.unmatchedChildren[componentName].message} `;
-        }
-      }
-      if (childLogicMessage) {
-        console.warn(childLogicMessage);
-      }
-    }
-
     if (recordItemSubmissions.length > 0) {
       let itemsSubmitted = [
         ...new Set(recordItemSubmissions.map((x) => x.itemNumber)),
@@ -9557,7 +10136,7 @@ export default class Core {
       // so don't record the submission to the attempt tables
       // (the event will still get recorded)
       if (this.itemNumber > 0) {
-        this.saveSubmissions({ pageCreditAchieved, suppressToast });
+        this.saveSubmissions({ pageCreditAchieved });
       }
     }
 
@@ -9715,7 +10294,7 @@ export default class Core {
     }
 
     const payload = {
-      doenetId: this.doenetId,
+      activityId: this.activityId,
       activityCid: this.activityCid,
       pageCid: this.cid,
       pageNumber: this.pageNumber,
@@ -9740,18 +10319,10 @@ export default class Core {
     };
 
     try {
-      let resp = await axios.post("/api/recordEvent.php", payload);
+      let resp = await axios.post(this.apiURLs.recordEvent, payload);
       // console.log(">>>>resp from record event", resp.data)
     } catch (e) {
       console.error(`Error saving event: ${e.message}`);
-      // postMessage({
-      //   messageType: "sendToast",
-      //   coreId: this.coreId,
-      //   args: {
-      //     message: `Error saving event: ${e.message}`,
-      //     toastType: toastType.ERROR
-      //   }
-      // })
     }
   }
 
@@ -9963,7 +10534,8 @@ export default class Core {
         if (
           composite instanceof
             this.componentInfoObjects.allComponentClasses._composite &&
-          composite.isExpanded
+          composite.isExpanded &&
+          !composite.isInErrorState
         ) {
           if (composite.state.readyToExpandWhenResolved.initiallyResolved) {
             if (await composite.stateValues.isInactiveCompositeReplacement) {
@@ -10000,7 +10572,7 @@ export default class Core {
         }
       }
       // Is it possible that could ever get an infinite loop here?
-      // I.e., is there some type of circular dependence among composites
+      // I.e., is there some type of circular dependency among composites
       // that could happen and we aren't detecting?
       // Note: have encountered cases where a composite must be updated twice
       // in this loop
@@ -10090,16 +10662,22 @@ export default class Core {
             }
           }
 
-          console.warn(
-            `can't update state variable ${vName} of component ${cName}, as it doesn't exist.`,
-          );
+          this.errorWarnings.warnings.push({
+            message: `can't update state variable ${vName} of component ${cName}, as it doesn't exist.`,
+            level: 2,
+            doenetMLrange: this._components[cName].doenetMLrange,
+          });
+          this.newErrorWarning = true;
           continue;
         }
 
         if (!compStateObj.hasEssential) {
-          console.warn(
-            `can't update state variable ${vName} of component ${cName}, as it does not have an essential state variable.`,
-          );
+          this.errorWarnings.warnings.push({
+            message: `can't update state variable ${vName} of component ${cName}, as it does not have an essential state variable.`,
+            level: 2,
+            doenetMLrange: this._components[cName].doenetMLrange,
+          });
+          this.newErrorWarning = true;
           continue;
         }
 
@@ -10180,9 +10758,12 @@ export default class Core {
           // don't have array
 
           if (!compStateObj.hasEssential) {
-            console.warn(
-              `can't update state variable ${vName} of component ${cName}, as it does not have an essential state variable.`,
-            );
+            this.errorWarnings.warnings.push({
+              message: `can't update state variable ${vName} of component ${cName}, as it does not have an essential state variable.`,
+              level: 2,
+              doenetMLrange: this._components[cName].doenetMLrange,
+            });
+            this.newErrorWarning = true;
             continue;
           }
 
@@ -10364,9 +10945,12 @@ export default class Core {
     if (instruction.additionalStateVariableValues) {
       for (let varName2 in instruction.additionalStateVariableValues) {
         if (!stateVarObj.additionalStateVariablesDefined.includes(varName2)) {
-          console.warn(
-            `Can't invert ${varName2} at the same time as ${stateVariable}, as not an additional state variable defined`,
-          );
+          this.errorWarnings.warnings.push({
+            message: `Can't invert ${varName2} at the same time as ${stateVariable}, as not an additional state variable defined`,
+            level: 2,
+            doenetMLrange: component.doenetMLrange,
+          });
+          this.newErrorWarning = true;
           continue;
         }
         // Note: don't check if varName2 is an array
@@ -10377,9 +10961,12 @@ export default class Core {
     }
 
     if (!stateVarObj.inverseDefinition) {
-      console.warn(
-        `Cannot change state variable ${stateVariable} of ${component.componentName} as it doesn't have an inverse definition`,
-      );
+      this.errorWarnings.warnings.push({
+        message: `Cannot change state variable ${stateVariable} of ${component.componentName} as it doesn't have an inverse definition`,
+        level: 2,
+        doenetMLrange: component.doenetMLrange,
+      });
+      this.newErrorWarning = true;
       return;
     }
 
@@ -10388,9 +10975,12 @@ export default class Core {
       !stateVarObj.ignoreFixed &&
       (await component.stateValues.fixed)
     ) {
-      console.log(
-        `Changing ${stateVariable} of ${component.componentName} did not succeed because fixed is true.`,
-      );
+      this.errorWarnings.warnings.push({
+        message: `Changing ${stateVariable} of ${component.componentName} did not succeed because fixed is true.`,
+        level: 2,
+        doenetMLrange: component.doenetMLrange,
+      });
+      this.newErrorWarning = true;
       return;
     }
 
@@ -10399,9 +10989,12 @@ export default class Core {
       stateVarObj.isLocation &&
       (await component.stateValues.fixLocation)
     ) {
-      console.log(
-        `Changing ${stateVariable} of ${component.componentName} did not succeed because fixLocation is true.`,
-      );
+      this.errorWarnings.warnings.push({
+        message: `Changing ${stateVariable} of ${component.componentName} did not succeed because fixLocation is true.`,
+        level: 2,
+        doenetMLrange: component.doenetMLrange,
+      });
+      this.newErrorWarning = true;
       return;
     }
 
@@ -10411,15 +11004,27 @@ export default class Core {
         (await component.stateValues.modifyIndirectly) !== false
       )
     ) {
-      console.log(
-        `Changing ${stateVariable} of ${component.componentName} did not succeed because modifyIndirectly is false.`,
-      );
+      this.errorWarnings.warnings.push({
+        message: `Changing ${stateVariable} of ${component.componentName} did not succeed because modifyIndirectly is false.`,
+        level: 2,
+        doenetMLrange: component.doenetMLrange,
+      });
+      this.newErrorWarning = true;
       return;
     }
 
     let inverseResult = await stateVarObj.inverseDefinition(
       inverseDefinitionArgs,
     );
+
+    if (inverseResult.sendWarnings && inverseResult.sendWarnings.length > 0) {
+      for (let warning of inverseResult.sendWarnings) {
+        warning.doenetMLrange = component.doenetMLrange;
+        this.errorWarnings.warnings.push(warning);
+      }
+
+      this.newErrorWarning = true;
+    }
 
     if (!inverseResult.success) {
       // console.log(`Changing ${stateVariable} of ${component.componentName} did not succeed.`);
@@ -10503,6 +11108,23 @@ export default class Core {
               if (depStateVarObj.isArrayEntry) {
                 let arrayKeys = await depStateVarObj.arrayKeys;
 
+                if (arrayKeys.length === 0) {
+                  // To allow for the possibility of setting array components
+                  // that don't yet exist, we recompute the array keys
+                  // under the scenario that we ignore the array size.
+                  // Unless allowExtraArrayKeysInInverse is set, any extra keys will be
+                  // filtered out, so add them only in this case.
+                  let depArrayStateVarObj =
+                    this._components[dComponentName].state[arrayStateVariable];
+                  if (depArrayStateVarObj.allowExtraArrayKeysInInverse) {
+                    arrayKeys = depArrayStateVarObj.getArrayKeysFromVarName({
+                      arrayEntryPrefix: depStateVarObj.entryPrefix,
+                      varEnding: depStateVarObj.varEnding,
+                      numDimensions: depArrayStateVarObj.numDimensions,
+                    });
+                  }
+                }
+
                 if (arrayKeys.length === 1) {
                   arrayInstructionInProgress.desiredValue[arrayKeys[0]] =
                     newInstruction.desiredValue;
@@ -10517,10 +11139,24 @@ export default class Core {
                   depStateVarObj.numDimensions === 1 ||
                   !Array.isArray(newInstruction.desiredValue)
                 ) {
-                  Object.assign(
-                    arrayInstructionInProgress.desiredValue,
-                    newInstruction.desiredValue,
-                  );
+                  if (
+                    typeof newInstruction.desiredValue === "object" &&
+                    !(newInstruction.desiredValue instanceof me.class)
+                  ) {
+                    Object.assign(
+                      arrayInstructionInProgress.desiredValue,
+                      newInstruction.desiredValue,
+                    );
+                  } else {
+                    // If the desired value isn't a non math-expression object,
+                    // then it is clearly not in the form {arrayKey:value}.
+                    // Since we don't have an arrayKey, just set the first array key in the array.
+                    let firstArrayKey = Array(depStateVarObj.numDimensions)
+                      .fill("0")
+                      .join(",");
+                    arrayInstructionInProgress.desiredValue[firstArrayKey] =
+                      newInstruction.desiredValue;
+                  }
                 } else {
                   // need to convert multidimensional array (newInstruction.desiredValue)
                   // to an object with multidimesional arrayKeys
@@ -10658,9 +11294,12 @@ export default class Core {
               !stateVarObj.ignoreFixed &&
               (await baseComponent.stateValues.fixed)
             ) {
-              console.log(
-                `Changing ${stateVariable} of ${baseComponent.componentName} did not succeed because fixed is true.`,
-              );
+              this.errorWarnings.warnings.push({
+                message: `Changing ${stateVariable} of ${baseComponent.componentName} did not succeed because fixed is true.`,
+                level: 2,
+                doenetMLrange: baseComponent.doenetMLrange,
+              });
+              this.newErrorWarning = true;
               return;
             }
 
@@ -10670,9 +11309,12 @@ export default class Core {
               !stateVarObj.isLocation &&
               (await baseComponent.stateValues.fixLocation)
             ) {
-              console.log(
-                `Changing ${stateVariable} of ${baseComponent.componentName} did not succeed because fixLocation is true.`,
-              );
+              this.errorWarnings.warnings.push({
+                message: `Changing ${stateVariable} of ${baseComponent.componentName} did not succeed because fixLocation is true.`,
+                level: 2,
+                doenetMLrange: baseComponent.doenetMLrange,
+              });
+              this.newErrorWarning = true;
               return;
             }
           }
@@ -10867,9 +11509,12 @@ export default class Core {
                   ) && dep2.downstreamComponentNames.length === 1
                 )
               ) {
-                console.warn(
-                  `Can't simultaneously set additional dependency value ${dependencyName2} if it isn't a state variable`,
-                );
+                this.errorWarnings.warnings.push({
+                  message: `Can't simultaneously set additional dependency value ${dependencyName2} if it isn't a state variable`,
+                  level: 2,
+                  doenetMLrange: this.components[dComponentName].doenetMLrange,
+                });
+                this.newErrorWarning = true;
                 continue;
               }
 
@@ -10879,9 +11524,12 @@ export default class Core {
                 dep2.downstreamComponentNames[0] !== dComponentName ||
                 !stateVarObj.additionalStateVariablesDefined.includes(varName2)
               ) {
-                console.warn(
-                  `Can't simultaneously set additional dependency value ${dependencyName2} if it doesn't correspond to additional state variable defined of ${dependencyName}'s state variable`,
-                );
+                this.errorWarnings.warnings.push({
+                  message: `Can't simultaneously set additional dependency value ${dependencyName2} if it doesn't correspond to additional state variable defined of ${dependencyName}'s state variable`,
+                  level: 2,
+                  doenetMLrange: this.components[dComponentName].doenetMLrange,
+                });
+                this.newErrorWarning = true;
                 continue;
               }
               if (!inst.additionalStateVariableValues) {
@@ -11067,7 +11715,7 @@ export default class Core {
 
     if (this.flags.allowLocalState) {
       await idb_set(
-        `${this.doenetId}|${this.pageNumber}|${this.attemptNumber}|${this.cid}`,
+        `${this.activityId}|${this.pageNumber}|${this.attemptNumber}|${this.cid}`,
         {
           coreState: this.cumulativeStateVariableChanges,
           rendererState: this.rendererState,
@@ -11099,7 +11747,7 @@ export default class Core {
       ),
       pageNumber: this.pageNumber,
       attemptNumber: this.attemptNumber,
-      doenetId: this.doenetId,
+      activityId: this.activityId,
       saveId,
       serverSaveId: this.serverSaveId,
       updateDataOnContentChange: this.updateDataOnContentChange,
@@ -11137,14 +11785,14 @@ export default class Core {
     }, 60000);
 
     // TODO: find out how to test if not online
-    // and send this toast if not online:
+    // and send this alert if not online:
 
     // postMessage({
-    //   messageType: "sendToast",
+    //   messageType: "sendAlert",
     //   coreId: this.coreId,
     //   args: {
     //     message: "You're not connected to the internet. Changes are not saved. ",
-    //     toastType: toastType.ERROR
+    //     alertType: "error"
     //   }
     // })
 
@@ -11152,17 +11800,18 @@ export default class Core {
 
     try {
       resp = await axios.post(
-        "/api/savePageState.php",
+        this.apiURLs.savePageState,
         this.pageStateToBeSavedToDatabase,
       );
     } catch (e) {
       postMessage({
-        messageType: "sendToast",
+        messageType: "sendAlert",
         coreId: this.coreId,
         args: {
           message:
             "Error synchronizing data.  Changes not saved to the server.",
-          toastType: toastType.ERROR,
+          alertType: "error",
+          id: "dataError",
         },
       });
       return;
@@ -11172,11 +11821,12 @@ export default class Core {
 
     if (resp.status === null) {
       postMessage({
-        messageType: "sendToast",
+        messageType: "sendAlert",
         coreId: this.coreId,
         args: {
           message: `Error synchronizing data.  Changes not saved to the server.  Are you connected to the internet?`,
-          toastType: toastType.ERROR,
+          alertType: "error",
+          id: "dataError",
         },
       });
       return;
@@ -11186,11 +11836,12 @@ export default class Core {
 
     if (!data.success) {
       postMessage({
-        messageType: "sendToast",
+        messageType: "sendAlert",
         coreId: this.coreId,
         args: {
           message: data.message,
-          toastType: toastType.ERROR,
+          alertType: "error",
+          id: "dataError",
         },
       });
       return;
@@ -11200,7 +11851,7 @@ export default class Core {
 
     if (this.flags.allowLocalState) {
       await idb_set(
-        `${this.doenetId}|${this.pageNumber}|${this.attemptNumber}|${this.cid}|ServerSaveId`,
+        `${this.activityId}|${this.pageNumber}|${this.attemptNumber}|${this.cid}|ServerSaveId`,
         data.saveId,
       );
     }
@@ -11214,7 +11865,7 @@ export default class Core {
       ) {
         if (this.flags.allowLocalState) {
           await idb_set(
-            `${this.doenetId}|${this.pageNumber}|${data.attemptNumber}|${data.cid}`,
+            `${this.activityId}|${this.pageNumber}|${data.attemptNumber}|${data.cid}`,
             {
               coreState: JSON.parse(
                 data.coreState,
@@ -11259,13 +11910,13 @@ export default class Core {
     // console.log(">>>>recordContentInteraction data",data)
   }
 
-  saveSubmissions({ pageCreditAchieved, suppressToast = false }) {
+  saveSubmissions({ pageCreditAchieved }) {
     if (!this.flags.allowSaveSubmissions) {
       return;
     }
 
     const payload = {
-      doenetId: this.doenetId,
+      activityId: this.activityId,
       attemptNumber: this.attemptNumber,
       credit: pageCreditAchieved,
       itemNumber: this.itemNumber,
@@ -11274,26 +11925,28 @@ export default class Core {
     console.log("payload for save credit for item", payload);
 
     axios
-      .post("/api/saveCreditForItem.php", payload)
+      .post(this.apiURLs.saveCreditForItem, payload)
       .then((resp) => {
         // console.log('>>>>saveCreditForItem resp', resp.data);
 
         if (resp.status === null) {
           postMessage({
-            messageType: "sendToast",
+            messageType: "sendAlert",
             coreId: this.coreId,
             args: {
               message: `Credit not saved due to error.  Are you connected to the internet?`,
-              toastType: toastType.ERROR,
+              alertType: "error",
+              id: "creditDataError",
             },
           });
         } else if (!resp.data.success) {
           postMessage({
-            messageType: "sendToast",
+            messageType: "sendAlert",
             coreId: this.coreId,
             args: {
               message: `Credit not saved due to error: ${resp.data.message}`,
-              toastType: toastType.ERROR,
+              alertType: "error",
+              id: "creditDataError",
             },
           });
         } else {
@@ -11313,62 +11966,59 @@ export default class Core {
 
           //TODO: need type warning (red but doesn't hang around)
           if (data.viewedSolution) {
-            if (!suppressToast) {
-              postMessage({
-                messageType: "sendToast",
-                coreId: this.coreId,
-                args: {
-                  message: "No credit awarded since solution was viewed.",
-                  toastType: toastType.INFO,
-                },
-              });
-            }
+            postMessage({
+              messageType: "sendAlert",
+              coreId: this.coreId,
+              args: {
+                message: "No credit awarded since solution was viewed.",
+                alertType: "info",
+                id: "solutionViewed",
+              },
+            });
           }
           if (data.timeExpired) {
-            if (!suppressToast) {
-              postMessage({
-                messageType: "sendToast",
-                coreId: this.coreId,
-                args: {
-                  message:
-                    "No credit awarded since the time allowed has expired.",
-                  toastType: toastType.INFO,
-                },
-              });
-            }
+            postMessage({
+              messageType: "sendAlert",
+              coreId: this.coreId,
+              args: {
+                message:
+                  "No credit awarded since the time allowed has expired.",
+                alertType: "info",
+                id: "timeExpired",
+              },
+            });
           }
           if (data.pastDueDate) {
-            if (!suppressToast) {
-              postMessage({
-                messageType: "sendToast",
-                coreId: this.coreId,
-                args: {
-                  message: "No credit awarded since the due date has passed.",
-                  toastType: toastType.INFO,
-                },
-              });
-            }
+            postMessage({
+              messageType: "sendAlert",
+              coreId: this.coreId,
+              args: {
+                message: "No credit awarded since the due date has passed.",
+                alertType: "info",
+                id: "pastDue",
+              },
+            });
           }
           if (data.exceededAttemptsAllowed) {
-            if (!suppressToast) {
-              postMessage({
-                messageType: "sendToast",
-                coreId: this.coreId,
-                args: {
-                  message:
-                    "No credit awarded since no more attempts are allowed.",
-                  toastType: toastType.INFO,
-                },
-              });
-            }
+            postMessage({
+              messageType: "sendAlert",
+              coreId: this.coreId,
+              args: {
+                message:
+                  "No credit awarded since no more attempts are allowed.",
+                alertType: "info",
+                id: "noMoreAttempts",
+              },
+            });
           }
           if (data.databaseError) {
             postMessage({
-              messageType: "sendToast",
+              messageType: "sendAlert",
               coreId: this.coreId,
               args: {
                 message: "Credit not saved due to database error.",
-                toastType: toastType.ERROR,
+                alertType: "error",
+                id: "creditDataError",
               },
             });
           }
@@ -11376,11 +12026,12 @@ export default class Core {
       })
       .catch((e) => {
         postMessage({
-          messageType: "sendToast",
+          messageType: "sendAlert",
           coreId: this.coreId,
           args: {
             message: `Credit not saved due to error: ${e.message}`,
-            toastType: toastType.ERROR,
+            alertType: "error",
+            id: "creditDataError",
           },
         });
       });
@@ -11505,8 +12156,8 @@ export default class Core {
     }
 
     try {
-      const resp = await axios.post("/api/reportSolutionViewed.php", {
-        doenetId: this.doenetId,
+      const resp = await axios.post(this.apiURLs.reportSolutionViewed, {
+        activityId: this.activityId,
         itemNumber: this.itemNumber,
         pageNumber: this.pageNumber,
         attemptNumber: this.attemptNumber,
@@ -11515,11 +12166,12 @@ export default class Core {
       if (resp.status === null) {
         let message = `Cannot show solution due to error.  Are you connected to the internet?`;
         postMessage({
-          messageType: "sendToast",
+          messageType: "sendAlert",
           coreId: this.coreId,
           args: {
             message,
-            toastType: toastType.ERROR,
+            alertType: "error",
+            id: "solutionDataError",
           },
         });
         return {
@@ -11548,11 +12200,12 @@ export default class Core {
       let message = `Cannot show solution due to error.`;
 
       postMessage({
-        messageType: "sendToast",
+        messageType: "sendAlert",
         coreId: this.coreId,
         args: {
           message,
-          toastType: toastType.ERROR,
+          alertType: "error",
+          id: "solutionDataError",
         },
       });
 
@@ -11596,13 +12249,39 @@ export default class Core {
     }
   }
 
-  handleNavigatingToComponent(componentName) {
+  async handleNavigatingToComponent({ componentName, hash }) {
     let component = this._components[componentName];
-    if (component?.actions?.revealSection) {
-      this.requestAction({
-        componentName: component.componentName,
-        actionName: "revealSection",
-      });
+    if (component) {
+      let componentAndAncestors = [
+        componentName,
+        ...component.ancestors.map((x) => x.componentName),
+      ];
+      let openedParent = false;
+      for (let cName of componentAndAncestors) {
+        let comp = this._components[cName];
+        if (comp.actions?.revealSection) {
+          let isOpen = await comp.stateValues.open;
+
+          if (isOpen === false) {
+            await this.performAction({
+              componentName: cName,
+              actionName: "revealSection",
+            });
+            if (cName !== componentName) {
+              openedParent = true;
+            }
+          }
+        }
+      }
+      if (openedParent) {
+        // If just opened parent, then we couldn't have navigated to target yet
+        // as the target didn't exist in the DOM when the parent was closed.
+        // Navigate to the specified hash now.
+        postMessage({
+          messageType: "navigateToHash",
+          args: { hash },
+        });
+      }
     }
   }
 
@@ -11680,28 +12359,32 @@ export default class Core {
       return null;
     }
 
-    let range = component.doenetMLrange;
+    let doenetMLrange = component.doenetMLrange;
 
-    if (!range) {
+    if (!doenetMLrange) {
       return null;
     }
 
     let startInd, endInd;
 
     if (displayOnlyChildren) {
-      if (range.selfCloseBegin !== undefined) {
+      if (doenetMLrange.selfCloseBegin !== undefined) {
         return "";
       }
-      startInd = range.openEnd + 1;
-      endInd = range.closeBegin;
+      startInd = doenetMLrange.openEnd + 1;
+      endInd = doenetMLrange.closeBegin - 1;
     } else {
       startInd =
-        range.openBegin !== undefined ? range.openBegin : range.selfCloseBegin;
+        doenetMLrange.openBegin !== undefined
+          ? doenetMLrange.openBegin
+          : doenetMLrange.selfCloseBegin;
       endInd =
-        range.closeEnd !== undefined ? range.closeEnd : range.selfCloseEnd;
+        doenetMLrange.closeEnd !== undefined
+          ? doenetMLrange.closeEnd
+          : doenetMLrange.selfCloseEnd;
     }
 
-    let doenetMLId = range.doenetMLId || 0;
+    let doenetMLId = doenetMLrange.doenetMLId || 0;
     let componentDoenetML = this.allDoenetMLs[doenetMLId].slice(
       startInd - 1,
       endInd,
@@ -11766,6 +12449,8 @@ export default class Core {
 }
 
 function validateAttributeValue({ value, attributeSpecification, attribute }) {
+  let warnings = [];
+
   if (
     attributeSpecification.valueTransformations &&
     value in attributeSpecification.valueTransformations
@@ -11790,10 +12475,22 @@ function validateAttributeValue({ value, attributeSpecification, attribute }) {
 
   if (attributeSpecification.validValues) {
     if (!attributeSpecification.validValues.includes(value)) {
-      console.warn(
-        `Invalid value ${value} for attribute ${attribute}, using value ${attributeSpecification.defaultValue}`,
-      );
-      value = attributeSpecification.defaultValue;
+      let defaultValue = attributeSpecification.defaultValue;
+      if (defaultValue === undefined) {
+        if (attributeSpecification.createPrimitiveOfType) {
+          defaultValue = attributeSpecification.defaultPrimitiveValue;
+        }
+        if (defaultValue === undefined) {
+          throw Error(
+            "Invalid attribute specification: no default value specified",
+          );
+        }
+      }
+      warnings.push({
+        message: `Invalid value ${value} for attribute ${attribute}, using value ${defaultValue}`,
+        level: 2,
+      });
+      value = defaultValue;
     }
   } else if (attributeSpecification.clamp) {
     if (value < attributeSpecification.clamp[0]) {
@@ -11805,7 +12502,7 @@ function validateAttributeValue({ value, attributeSpecification, attribute }) {
     }
   }
 
-  return value;
+  return { value, warnings };
 }
 
 function calculateAllComponentsShadowing(component) {
@@ -11819,6 +12516,11 @@ function calculateAllComponentsShadowing(component) {
       }
     }
   }
+
+  // Idea for this part: if a component is shadowing this component's composite,
+  // then it is effectively shadowing the component
+  // TODO 1: Why do we need to to this?  Why aren't these components reachable through shadowBy?
+  // TODO 2: Does this properly deal with the no-link case?
   if (component.replacementOf) {
     let additionalShadowing = calculateAllComponentsShadowing(
       component.replacementOf,

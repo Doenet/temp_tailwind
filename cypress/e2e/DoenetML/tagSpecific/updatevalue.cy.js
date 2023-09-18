@@ -1,5 +1,5 @@
 import me from "math-expressions";
-import { cesc } from "../../../../src/_utils/url";
+import { cesc, cesc2 } from "../../../../src/_utils/url";
 
 describe("UpdateValue Tag Tests", function () {
   beforeEach(() => {
@@ -527,6 +527,216 @@ describe("UpdateValue Tag Tests", function () {
       .then((text) => {
         expect(text.trim()).equal("(6,0)");
       });
+  });
+
+  it("update componentIndex of group", () => {
+    cy.window().then(async (win) => {
+      win.postMessage(
+        {
+          doenetML: `
+    <text>a</text>
+    <group name="grp">
+      <point name="p">(3,2)</point>
+      skip me
+      <point name="p2">(1,5)</point>
+      skip me too
+      <point name="p3">(7,0)</point>
+    </group>
+    
+  
+    <updateValue target="grp" prop="x" newValue="2$(grp[1].x)" componentIndex="2" />
+    <updateValue target="grp[3].x" newValue="2$(grp[1].x)" />
+    <p><booleaninput name="bi" /><copy prop="value" source="bi" assignNames="b" /></p>
+    `,
+        },
+        "*",
+      );
+    });
+    cy.get(cesc("#\\/_text1")).should("have.text", "a"); //wait for page to load
+
+    cy.get(cesc("#\\/p"))
+      .find(".mjx-mrow")
+      .eq(0)
+      .invoke("text")
+      .then((text) => {
+        expect(text.trim()).equal("(3,2)");
+      });
+    cy.get(cesc("#\\/p2"))
+      .find(".mjx-mrow")
+      .eq(0)
+      .invoke("text")
+      .then((text) => {
+        expect(text.trim()).equal("(1,5)");
+      });
+    cy.get(cesc("#\\/p3"))
+      .find(".mjx-mrow")
+      .eq(0)
+      .invoke("text")
+      .then((text) => {
+        expect(text.trim()).equal("(7,0)");
+      });
+
+    cy.get(cesc("#\\/_updatevalue1_button")).click();
+    cy.waitUntil(() =>
+      cy
+        .get(cesc("#\\/p2"))
+        .find(".mjx-mrow")
+        .eq(0)
+        .invoke("text")
+        .then((text) => text.trim() === "(6,5)"),
+    );
+    cy.get(cesc("#\\/p"))
+      .find(".mjx-mrow")
+      .eq(0)
+      .invoke("text")
+      .then((text) => {
+        expect(text.trim()).equal("(3,2)");
+      });
+    cy.get(cesc("#\\/p2"))
+      .find(".mjx-mrow")
+      .eq(0)
+      .invoke("text")
+      .then((text) => {
+        expect(text.trim()).equal("(6,5)");
+      });
+    cy.get(cesc("#\\/p3"))
+      .find(".mjx-mrow")
+      .eq(0)
+      .invoke("text")
+      .then((text) => {
+        expect(text.trim()).equal("(7,0)");
+      });
+
+    cy.get(cesc("#\\/_updatevalue1_button")).click();
+    // nothing has changed even after wait for core to respond to booleaninput
+    cy.get(cesc("#\\/bi")).click();
+    cy.get(cesc("#\\/b")).should("have.text", "true");
+    cy.get(cesc("#\\/p"))
+      .find(".mjx-mrow")
+      .eq(0)
+      .invoke("text")
+      .then((text) => {
+        expect(text.trim()).equal("(3,2)");
+      });
+    cy.get(cesc("#\\/p2"))
+      .find(".mjx-mrow")
+      .eq(0)
+      .invoke("text")
+      .then((text) => {
+        expect(text.trim()).equal("(6,5)");
+      });
+    cy.get(cesc("#\\/p3"))
+      .find(".mjx-mrow")
+      .eq(0)
+      .invoke("text")
+      .then((text) => {
+        expect(text.trim()).equal("(7,0)");
+      });
+
+    cy.get(cesc("#\\/_updatevalue2_button")).click();
+    cy.waitUntil(() =>
+      cy
+        .get(cesc("#\\/p2"))
+        .find(".mjx-mrow")
+        .eq(0)
+        .invoke("text")
+        .then((text) => text.trim() === "(6,5)"),
+    );
+    cy.get(cesc("#\\/p"))
+      .find(".mjx-mrow")
+      .eq(0)
+      .invoke("text")
+      .then((text) => {
+        expect(text.trim()).equal("(3,2)");
+      });
+    cy.get(cesc("#\\/p2"))
+      .find(".mjx-mrow")
+      .eq(0)
+      .invoke("text")
+      .then((text) => {
+        expect(text.trim()).equal("(6,5)");
+      });
+    cy.get(cesc("#\\/p3"))
+      .find(".mjx-mrow")
+      .eq(0)
+      .invoke("text")
+      .then((text) => {
+        expect(text.trim()).equal("(6,0)");
+      });
+
+    cy.get(cesc("#\\/_updatevalue2_button")).click();
+    // nothing has changed even after wait for core to respond to booleaninput
+    cy.get(cesc("#\\/bi")).click();
+    cy.get(cesc("#\\/b")).should("have.text", "false");
+    cy.get(cesc("#\\/p"))
+      .find(".mjx-mrow")
+      .eq(0)
+      .invoke("text")
+      .then((text) => {
+        expect(text.trim()).equal("(3,2)");
+      });
+    cy.get(cesc("#\\/p2"))
+      .find(".mjx-mrow")
+      .eq(0)
+      .invoke("text")
+      .then((text) => {
+        expect(text.trim()).equal("(6,5)");
+      });
+    cy.get(cesc("#\\/p3"))
+      .find(".mjx-mrow")
+      .eq(0)
+      .invoke("text")
+      .then((text) => {
+        expect(text.trim()).equal("(6,0)");
+      });
+  });
+
+  it("update componentIndex of group with target subnames", () => {
+    cy.window().then(async (win) => {
+      win.postMessage(
+        {
+          doenetML: `
+    <text>a</text>
+    <group name="grp">
+      <p newNamespace>Number <number name="n">1</number> and point <point name="p">(3,2)</point>.</p>
+      <p newNamespace>Text <text name="t">hello</text> and line <line name="l" through="(2,3) (1,2)" />.</p>
+    </group>
+    
+    <updateValue target="grp[1]/n" newValue="3" />
+    <updateValue target="grp[1]/p.y" newValue="5" />
+    <updateValue target="grp[2]/t.value" newValue="bye" type="text" />
+    <updateValue target="grp[2]/l.points[2].x" newValue="2" />
+    `,
+        },
+        "*",
+      );
+    });
+    cy.get(cesc("#\\/_text1")).should("have.text", "a"); //wait for page to load
+
+    cy.get(cesc2("#/_p1")).should("contain.text", "Number 1 and");
+    cy.get(cesc2("#/_p1") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(3,2)");
+    cy.get(cesc2("#/_p2")).should("contain.text", "Text hello and");
+    cy.get(cesc2("#/_p2") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "0=x−y+1");
+
+    cy.get(cesc2("#/_updatevalue1_button")).click();
+    cy.get(cesc2("#/_p1")).should("contain.text", "Number 3 and");
+
+    cy.get(cesc2("#/_updatevalue2_button")).click();
+    cy.get(cesc2("#/_p1") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "(3,5)");
+
+    cy.get(cesc2("#/_updatevalue3_button")).click();
+    cy.get(cesc2("#/_p2")).should("contain.text", "Text bye and");
+
+    cy.get(cesc2("#/_updatevalue4_button")).click();
+    cy.get(cesc2("#/_p2") + " .mjx-mrow")
+      .eq(0)
+      .should("have.text", "0=x−2");
   });
 
   it("update propIndex", () => {
@@ -1360,6 +1570,108 @@ describe("UpdateValue Tag Tests", function () {
         .then((text) => {
           expect(text.trim()).equal("9x");
         });
+    });
+  });
+
+  it("update triggered when objects clicked, trigger with unnamed copies", () => {
+    cy.window().then(async (win) => {
+      win.postMessage(
+        {
+          doenetML: `
+    <text>a</text>
+    <setup>
+      <point name="P">(-1,2)</point>
+    </setup>
+    <graph>
+      $P
+    </graph>
+    <graph>
+      $P{assignNames="P2"}
+    </graph>
+    <graph>
+      <point copySource="P" />
+    </graph>
+
+    <math name="x">x</math>
+    
+    <updateValue name="trip" target="x" newValue="3$x" simplify triggerWhenObjectsClicked="P" />
+
+    <p><booleaninput name="bi" /><boolean name="bi2" copySource="bi" /></p>
+    `,
+        },
+        "*",
+      );
+    });
+    cy.get(cesc2("#/_text1")).should("have.text", "a"); //wait for page to load
+
+    cy.window().then(async (win) => {
+      let stateVariables = await win.returnAllStateVariables1();
+      let PcopyName =
+        stateVariables["/_graph1"].activeChildren[0].componentName;
+
+      cy.get(cesc2("#/x") + " .mjx-mrow")
+        .eq(0)
+        .should("have.text", "x");
+
+      cy.get(cesc("#\\/trip")).should("not.exist");
+
+      cy.log("clicking unnamed copy triggers update");
+      cy.window().then(async (win) => {
+        await win.callAction1({
+          actionName: "pointClicked",
+          componentName: PcopyName,
+          args: { name: PcopyName },
+        });
+      });
+      cy.get(cesc2("#/x")).should("contain.text", "3x");
+      cy.get(cesc2("#/x") + " .mjx-mrow")
+        .eq(0)
+        .should("have.text", "3x");
+
+      cy.log("clicking copy with an assignNames does not trigger update");
+
+      cy.window().then(async (win) => {
+        await win.callAction1({
+          actionName: "pointClicked",
+          componentName: "/P2",
+          args: { name: "/P2" },
+        });
+      });
+      cy.get(cesc2("#/bi")).click();
+      cy.get(cesc2("#/bi2")).should("have.text", "true"); // to make sure core responded
+
+      cy.get(cesc2("#/x") + " .mjx-mrow")
+        .eq(0)
+        .should("have.text", "3x");
+
+      cy.log("clicking point with copySource does not trigger update");
+
+      cy.window().then(async (win) => {
+        await win.callAction1({
+          actionName: "pointClicked",
+          componentName: "/_point2",
+          args: { name: "/_point2" },
+        });
+      });
+      cy.get(cesc2("#/bi")).click();
+      cy.get(cesc2("#/bi2")).should("have.text", "false"); // to make sure core responded
+
+      cy.get(cesc2("#/x") + " .mjx-mrow")
+        .eq(0)
+        .should("have.text", "3x");
+
+      cy.log("clicking unnamed copy triggers update again");
+      cy.window().then(async (win) => {
+        await win.callAction1({
+          actionName: "pointClicked",
+          componentName: PcopyName,
+          args: { name: PcopyName },
+        });
+      });
+      cy.get(cesc2("#/x")).should("contain.text", "9x");
+      cy.get(cesc2("#/x") + " .mjx-mrow")
+        .eq(0)
+        .should("have.text", "9x");
     });
   });
 
@@ -2745,6 +3057,68 @@ describe("UpdateValue Tag Tests", function () {
     cy.get(cesc("#\\/t")).should("have.text", "something");
     cy.get(cesc("#\\/toBlank_button")).click();
     cy.get(cesc("#\\/t")).should("have.text", "");
+  });
+
+  it("updatevalue warnings with invalid targets", () => {
+    cy.window().then(async (win) => {
+      win.postMessage(
+        {
+          doenetML: `
+  <number name="n">1</number>
+  <p name="p">1</p>
+  <line name="l" through="(1,2) (3,4)" />
+  <updateValue target='n.invalid' newValue="1" />
+  <updateValue target='p' newValue="1" />
+  <updateValue target='l.points[1].bad' newValue="1" />
+  <booleaninput name="bi" /><boolean copySource="bi" name="b" />
+  `,
+        },
+        "*",
+      );
+    });
+
+    cy.log("click the update value buttons");
+    cy.get(cesc2("#/_updatevalue1")).click();
+    cy.get(cesc2("#/_updatevalue2")).click();
+    cy.get(cesc2("#/_updatevalue3")).click();
+
+    cy.log("make sure core has responded");
+    cy.get(cesc2("#/bi")).click();
+    cy.get(cesc2("#/b")).should("have.text", "true");
+
+    cy.window().then(async (win) => {
+      let errorWarnings = await win.returnErrorWarnings1();
+
+      expect(errorWarnings.errors.length).eq(0);
+      expect(errorWarnings.warnings.length).eq(3);
+
+      expect(errorWarnings.warnings[0].message).contain(
+        'Invalid target for <updateValue>: cannot find a state variable named "invalid" on a <number>',
+      );
+      expect(errorWarnings.warnings[0].level).eq(1);
+      expect(errorWarnings.warnings[0].doenetMLrange.lineBegin).eq(5);
+      expect(errorWarnings.warnings[0].doenetMLrange.charBegin).eq(3);
+      expect(errorWarnings.warnings[0].doenetMLrange.lineEnd).eq(5);
+      expect(errorWarnings.warnings[0].doenetMLrange.charEnd).eq(49);
+
+      expect(errorWarnings.warnings[1].message).contain(
+        'Invalid target for <updateValue>: cannot find a state variable named "value" on a <p>',
+      );
+      expect(errorWarnings.warnings[1].level).eq(1);
+      expect(errorWarnings.warnings[1].doenetMLrange.lineBegin).eq(6);
+      expect(errorWarnings.warnings[1].doenetMLrange.charBegin).eq(3);
+      expect(errorWarnings.warnings[1].doenetMLrange.lineEnd).eq(6);
+      expect(errorWarnings.warnings[1].doenetMLrange.charEnd).eq(41);
+
+      expect(errorWarnings.warnings[2].message).contain(
+        "Invalid target for <updateValue>: cannot find target",
+      );
+      expect(errorWarnings.warnings[2].level).eq(1);
+      expect(errorWarnings.warnings[2].doenetMLrange.lineBegin).eq(7);
+      expect(errorWarnings.warnings[2].doenetMLrange.charBegin).eq(3);
+      expect(errorWarnings.warnings[2].doenetMLrange.lineEnd).eq(7);
+      expect(errorWarnings.warnings[2].doenetMLrange.charEnd).eq(55);
+    });
   });
 
   // TODO: what is supposed to happen here?
