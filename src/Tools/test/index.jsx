@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import DoenetTest from "./DoenetTest.jsx";
 import { RecoilRoot } from "recoil";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import "../../input.css";
 
 const root = createRoot(document.getElementById("root"));
 root.render(
