@@ -7,26 +7,25 @@ import {
   faTimes,
   faCloud,
 } from "@fortawesome/free-solid-svg-icons";
-import styled from "styled-components";
+import "./answer.css";
 
-// Moved most of checkWorkStyle styling into Button
-const Button = styled.button`
-  position: relative;
-  height: 24px;
-  display: inline-block;
-  color: white;
-  background-color: var(--mainBlue);
-  padding: 2px;
-  /* border: var(--mainBorder); */
-  border: none;
-  border-radius: var(--mainBorderRadius);
-  margin: 0px 4px 4px 0px;
+// Moved most of this styling into answer.css
+// const Button = styled.button`
+//   position: relative;
+//   height: 24px;
+//   display: inline-block;
+//   color: white;
+//   background-color: var(--mainblue);
+//   padding: 2px;
+//   /* border: var(--mainBorder); */
+//   border-radius: var(--mainBorderRadius);
+//   margin: 0px 4px 4px 0px;
 
-  &:hover {
-    background-color: var(--lightBlue);
-    color: black;
-  }
-`;
+//   &:hover {
+//     background-color: var(--lightBlue);
+//     color: black;
+//   }
+// `;
 
 export default React.memo(function Answer(props) {
   let { name, id, SVs, actions, children, callAction } =
@@ -79,27 +78,16 @@ export default React.memo(function Answer(props) {
       }
     }
 
-    let checkWorkStyle = {
-      cursor: "pointer",
-      padding: "1px 6px 1px 6px",
-    };
-
-    if (disabled) {
-      checkWorkStyle.backgroundColor = getComputedStyle(
-        document.documentElement,
-      ).getPropertyValue("--mainGray");
-    }
-
     let checkWorkText = SVs.submitLabel;
     if (!SVs.showCorrectness) {
       checkWorkText = SVs.submitLabelNoCorrectness;
     }
     let checkworkComponent = (
-      <Button
+      <button
+        className="checkWork"
         id={id + "_submit"}
         tabIndex="0"
         disabled={disabled}
-        style={checkWorkStyle}
         onClick={submitAnswer}
         onKeyPress={(e) => {
           if (e.key === "Enter") {
@@ -118,51 +106,51 @@ export default React.memo(function Answer(props) {
         />
         &nbsp;
         {checkWorkText}
-      </Button>
+      </button>
     );
 
     if (SVs.showCorrectness) {
       if (validationState === "correct") {
-        checkWorkStyle.backgroundColor = getComputedStyle(
-          document.documentElement,
-        ).getPropertyValue("--mainGreen");
         checkworkComponent = (
-          <Button id={id + "_correct"} style={checkWorkStyle}>
+          <button className="checkWork" id={id + "_correct"}>
             <FontAwesomeIcon icon={faCheck} />
             &nbsp; Correct
-          </Button>
+          </button>
         );
+        document.getElementById(id + "_correct").style.backgroundColor = // FIXME
+          "bg-green-700";
       } else if (validationState === "incorrect") {
-        checkWorkStyle.backgroundColor = getComputedStyle(
-          document.documentElement,
-        ).getPropertyValue("--mainRed");
         checkworkComponent = (
-          <Button id={id + "_incorrect"} style={checkWorkStyle}>
+          <button className="checkWork" id={id + "_incorrect"}>
             <FontAwesomeIcon icon={faTimes} />
             &nbsp; Incorrect
-          </Button>
+          </button>
         );
+        document.getElementById(id + "_incorrect").style.backgroundColor = // FIXME
+          "bg-red-700";
       } else if (validationState === "partialcorrect") {
-        checkWorkStyle.backgroundColor = "#efab34";
         let percent = Math.round(SVs.creditAchieved * 100);
         let partialCreditContents = `${percent}% Correct`;
 
         checkworkComponent = (
-          <Button id={id + "_partial"} style={checkWorkStyle}>
+          <button className="checkWork" id={id + "_partial"}>
             {partialCreditContents}
-          </Button>
+          </button>
         );
+        document.getElementById(id + "_partial").style.backgroundColor = // FIXME
+          "bg-orange-700";
       }
     } else {
       // showCorrectness is false
       if (validationState !== "unvalidated") {
-        checkWorkStyle.backgroundColor = "rgb(74, 3, 217)";
         checkworkComponent = (
-          <Button id={id + "_saved"} style={checkWorkStyle}>
+          <button className="checkWork" id={id + "_saved"}>
             <FontAwesomeIcon icon={faCloud} />
             &nbsp; Response Saved
-          </Button>
+          </button>
         );
+        document.getElementById(id + "_saved").style.backgroundColor = // FIXME
+          "bg-purple-700";
       }
     }
 

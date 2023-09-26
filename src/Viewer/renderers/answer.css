@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  button.checkWork {
+    @apply relative 
+    h-6
+    inline-block 
+    text-white
+    bg-blue-700
+    p-0.5
+    rounded;
+  }
+  button.checkWork:hover:enabled {
+    @apply bg-blue-300 text-black;
+  }
+  button.checkWork:disabled {
+    @apply bg-gray-300 cursor-not-allowed;
+  }
+}
