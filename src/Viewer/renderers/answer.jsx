@@ -84,7 +84,7 @@ export default React.memo(function Answer(props) {
     }
     let checkworkComponent = (
       <button
-        className="checkWork"
+        className="checkWork bg-blue-700"
         id={id + "_submit"}
         tabIndex="0"
         disabled={disabled}
@@ -111,46 +111,51 @@ export default React.memo(function Answer(props) {
 
     if (SVs.showCorrectness) {
       if (validationState === "correct") {
+        // document.getElementById(id).classList.remove("bg-blue-700");
         checkworkComponent = (
-          <button className="checkWork" id={id + "_correct"}>
+          <button
+            className="checkWork bg-green-700"
+            id={id + "_correct"}
+            // style={{ backgroundColor: "bg-green-700" }}
+          >
             <FontAwesomeIcon icon={faCheck} />
             &nbsp; Correct
           </button>
         );
-        document.getElementById(id + "_correct").style.backgroundColor = // FIXME
-          "bg-green-700";
+        // document.getElementById(id + "_correct").style.backgroundColor =
+        ("bg-green-700"); // FIXME
       } else if (validationState === "incorrect") {
         checkworkComponent = (
-          <button className="checkWork" id={id + "_incorrect"}>
+          <button className="checkWork bg-red-700" id={id + "_incorrect"}>
             <FontAwesomeIcon icon={faTimes} />
             &nbsp; Incorrect
           </button>
         );
-        document.getElementById(id + "_incorrect").style.backgroundColor = // FIXME
-          "bg-red-700";
+        // document.getElementById(id + "_incorrect").style.backgroundColor = // FIXME
+        //   "bg-red-700";
       } else if (validationState === "partialcorrect") {
         let percent = Math.round(SVs.creditAchieved * 100);
         let partialCreditContents = `${percent}% Correct`;
 
         checkworkComponent = (
-          <button className="checkWork" id={id + "_partial"}>
+          <button className="checkWork bg-orange-700" id={id + "_partial"}>
             {partialCreditContents}
           </button>
         );
-        document.getElementById(id + "_partial").style.backgroundColor = // FIXME
-          "bg-orange-700";
+        // document.getElementById(id + "_partial").style.backgroundColor = // FIXME
+        //   "bg-orange-700";
       }
     } else {
       // showCorrectness is false
       if (validationState !== "unvalidated") {
         checkworkComponent = (
-          <button className="checkWork" id={id + "_saved"}>
+          <button className="checkWork bg-purple-700" id={id + "_saved"}>
             <FontAwesomeIcon icon={faCloud} />
             &nbsp; Response Saved
           </button>
         );
-        document.getElementById(id + "_saved").style.backgroundColor = // FIXME
-          "bg-purple-700";
+        // document.getElementById(id + "_saved").style.backgroundColor = // FIXME
+        //   "bg-purple-700";
       }
     }
 
