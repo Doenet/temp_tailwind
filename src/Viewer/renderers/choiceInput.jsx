@@ -12,6 +12,7 @@ import { rendererState } from "../useDoenetRenderer";
 import { useSetRecoilState } from "recoil";
 import styled from "styled-components";
 import "./choiceInput.css";
+import "./answer.css";
 
 // Moved most of checkWorkStyle styling into Button
 const Button = styled.button`
@@ -164,12 +165,12 @@ export default React.memo(function ChoiceInput(props) {
           ).getPropertyValue("--mainGray");
         }
         checkWorkButton = (
-          <Button
+          <button
+            className="checkWork bg-blue-700"
             id={id + "_submit"}
             disabled={disabled}
             tabIndex="0"
             // ref={c => { this.target = c && ReactDOM.findDOMNode(c); }}
-            style={checkWorkStyle}
             onClick={() =>
               callAction({
                 action: actions.submitAnswer,
@@ -192,51 +193,42 @@ export default React.memo(function ChoiceInput(props) {
               icon={faLevelDownAlt}
               transform={{ rotate: 90 }}
             />
-          </Button>
+          </button>
         );
       } else {
         if (SVs.showCorrectness) {
           if (validationState === "correct") {
-            checkWorkStyle.backgroundColor = getComputedStyle(
-              document.documentElement,
-            ).getPropertyValue("--mainGreen");
             checkWorkButton = (
-              <Button id={id + "_correct"} style={checkWorkStyle}>
+              <button className="checkWork bg-green-700" id={id + "_correct"}>
                 <FontAwesomeIcon icon={faCheck} />
-              </Button>
+              </button>
             );
           } else if (validationState === "partialcorrect") {
             //partial credit
-
             let percent = Math.round(SVs.creditAchieved * 100);
             let partialCreditContents = `${percent} %`;
             checkWorkStyle.width = "44px";
 
-            checkWorkStyle.backgroundColor = "#efab34";
             checkWorkButton = (
-              <Button id={id + "_partial"} style={checkWorkStyle}>
+              <button className="checkWork bg-orange-700" id={id + "_partial"}>
                 {partialCreditContents}
-              </Button>
+              </button>
             );
           } else {
             //incorrect
-            checkWorkStyle.backgroundColor = getComputedStyle(
-              document.documentElement,
-            ).getPropertyValue("--mainRed");
             checkWorkButton = (
-              <Button id={id + "_incorrect"} style={checkWorkStyle}>
+              <button className="checkWork bg-red-700" id={id + "_incorrect"}>
                 <FontAwesomeIcon icon={faTimes} />
-              </Button>
+              </button>
             );
           }
         } else {
           // showCorrectness is false
-          checkWorkStyle.backgroundColor = "rgb(74, 3, 217)";
           checkWorkStyle.padding = "1px 8px 1px 4px"; // To center the faCloud icon
           checkWorkButton = (
-            <Button id={id + "_saved"} style={checkWorkStyle}>
+            <button className="checkWork bg-purple-700" id={id + "_saved"}>
               <FontAwesomeIcon icon={faCloud} />
-            </Button>
+            </button>
           );
         }
       }
@@ -291,10 +283,7 @@ export default React.memo(function ChoiceInput(props) {
     return (
       <React.Fragment>
         <a name={id} />
-        <label
-          style={{ display: "inline-flex", maxWidth: "100%" }}
-          id={id + "-label"}
-        >
+        <label className="select-label" id={id + "-label"}>
           {label}
           <select
             className="custom-select"
@@ -480,7 +469,7 @@ export default React.memo(function ChoiceInput(props) {
               <span className={radioClassName} />
               <label
                 htmlFor={keyBeginning + (i + 1) + "_input"}
-                style={{ marginLeft: "2px" }}
+                className="ml-2"
               >
                 {child}
               </label>
@@ -512,7 +501,7 @@ export default React.memo(function ChoiceInput(props) {
               <span className={checkboxClassName} />
               <label
                 htmlFor={keyBeginning + (i + 1) + "_input"}
-                style={{ marginLeft: "2px" }}
+                className="ml-2"
               >
                 {child}
               </label>

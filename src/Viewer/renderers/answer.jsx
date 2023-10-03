@@ -84,7 +84,7 @@ export default React.memo(function Answer(props) {
     }
     let checkworkComponent = (
       <button
-        className="checkWork bg-blue-700"
+        className="check-work bg-blue-700"
         id={id + "_submit"}
         tabIndex="0"
         disabled={disabled}
@@ -111,51 +111,38 @@ export default React.memo(function Answer(props) {
 
     if (SVs.showCorrectness) {
       if (validationState === "correct") {
-        // document.getElementById(id).classList.remove("bg-blue-700");
         checkworkComponent = (
-          <button
-            className="checkWork bg-green-700"
-            id={id + "_correct"}
-            // style={{ backgroundColor: "bg-green-700" }}
-          >
+          <button className="check-work bg-green-700" id={id + "_correct"}>
             <FontAwesomeIcon icon={faCheck} />
             &nbsp; Correct
           </button>
         );
-        // document.getElementById(id + "_correct").style.backgroundColor =
-        ("bg-green-700"); // FIXME
       } else if (validationState === "incorrect") {
         checkworkComponent = (
-          <button className="checkWork bg-red-700" id={id + "_incorrect"}>
+          <button className="check-work bg-red-700" id={id + "_incorrect"}>
             <FontAwesomeIcon icon={faTimes} />
             &nbsp; Incorrect
           </button>
         );
-        // document.getElementById(id + "_incorrect").style.backgroundColor = // FIXME
-        //   "bg-red-700";
       } else if (validationState === "partialcorrect") {
         let percent = Math.round(SVs.creditAchieved * 100);
         let partialCreditContents = `${percent}% Correct`;
 
         checkworkComponent = (
-          <button className="checkWork bg-orange-700" id={id + "_partial"}>
+          <button className="check-work bg-orange-700" id={id + "_partial"}>
             {partialCreditContents}
           </button>
         );
-        // document.getElementById(id + "_partial").style.backgroundColor = // FIXME
-        //   "bg-orange-700";
       }
     } else {
       // showCorrectness is false
       if (validationState !== "unvalidated") {
         checkworkComponent = (
-          <button className="checkWork bg-purple-700" id={id + "_saved"}>
+          <button className="check-work bg-purple-700" id={id + "_saved"}>
             <FontAwesomeIcon icon={faCloud} />
             &nbsp; Response Saved
           </button>
         );
-        // document.getElementById(id + "_saved").style.backgroundColor = // FIXME
-        //   "bg-purple-700";
       }
     }
 
@@ -183,7 +170,7 @@ export default React.memo(function Answer(props) {
     }
 
     return (
-      <span id={id} style={{ marginBottom: "4px" }}>
+      <span id={id} className="mb-4">
         <a name={id} />
         {inputChildrenToRender}
         {checkworkComponent}
@@ -191,7 +178,7 @@ export default React.memo(function Answer(props) {
     );
   } else {
     return (
-      <span id={id} style={{ marginBottom: "4px" }}>
+      <span id={id} className="mb-4">
         <a name={id} />
         {inputChildrenToRender}
       </span>

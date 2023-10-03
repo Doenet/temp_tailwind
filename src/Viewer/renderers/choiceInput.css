@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* CUSTOM STYLING FOR RADIO BUTTON */
 
 /* Customize the label (the container) */
@@ -206,18 +210,24 @@
 }
 
 /* CUSTOM STYLING FOR SELECT */
-.custom-select {
-  border: var(--mainBorder);
+label.select-label {
+  @apply inline-flex
+  max-w-full;
+}
+select.custom-select {
+  /* border: var(--mainBorder);
   border-radius: var(--mainBorderRadius);
   height: 24px;
-  margin: 0px 4px 4px 4px;
-}
-
-.custom-select:hover {
-  background: var(--lightBlue);
+  margin: 0px 4px 4px 4px; */
+  @apply rounded
+  h-6
+  mt-0
+  mr-4
+  mb-4
+  ml-0;
 }
 
 .custom-select:focus-within {
-  outline: var(--mainBorder);
-  outline-offset: 2px;
+  @apply outline-none
+  ring;
 }

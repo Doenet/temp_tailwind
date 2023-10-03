@@ -3,23 +3,24 @@
 @tailwind utilities;
 
 @layer components {
-  button.checkWork {
+  button.check-work {
     @apply relative 
     h-6
     inline-block 
     text-white
     /* bg-blue-700 */
     p-0.5
-    rounded;
+    rounded
+    mt-0
+    mr-4
+    mb-4
+    ml-0;
   }
-  /* button.checkWork:hover:enabled {
-    @apply bg-blue-300 text-black;
-  } */
-  button.checkWork:focus {
+  button.check-work:focus {
     @apply outline-none
      ring;
   }
-  button.checkWork:disabled {
+  button.check-work:disabled {
     @apply bg-gray-300 cursor-not-allowed;
   }
 }
