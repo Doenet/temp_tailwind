@@ -6,7 +6,7 @@
 
 /* Customize the label (the container) */
 .radio-container {
-  display: block;
+  /* display: block;
   position: relative;
   padding-left: 24px;
   margin-bottom: 4px;
@@ -14,37 +14,34 @@
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-  user-select: none;
+  user-select: none; */
+  @apply block
+  relative
+  pl-6
+  mb-1
+  cursor-pointer;
 }
-
-.radio-container label {
-  cursor: pointer;
+.radio-container:disabled,
+.radio-input:disabled {
+  @apply cursor-not-allowed;
 }
-
-.radio-container-disabled {
-  cursor: not-allowed;
-}
-
-.radio-container-disabled label {
-  cursor: not-allowed;
-}
-
 /* Hide the browser's default radio button */
-.radio-container input {
-  position: absolute;
+input.radio-input {
+  /* position: absolute;
   opacity: 0;
   cursor: pointer;
   height: 1;
-  width: 1;
-}
-
-.radio-container-disabled input {
-  cursor: not-allowed;
+  width: 1; */
+  @apply absolute
+  opacity-0
+  cursor-pointer
+  h-px
+  w-px;
 }
 
 /* Create a custom radio button */
 .radio-checkmark {
-  position: absolute;
+  /* position: absolute;
   top: 0;
   left: 0;
   height: 18px;
@@ -52,13 +49,20 @@
   background-color: var(--mainGray);
   border-style: solid;
   border-color: var(--canvastext);
-  border-radius: 50%;
+  border-radius: 50%; */
+  @apply absolute
+  top-0
+  left-0
+  w-4
+  bg-white
+  border-solid
+  border-gray-300
+  rounded-full;
 }
 
-.radio-checkmark-disabled {
-  background-color: var(--mainGray);
-  border-color: var(--mainGray);
-  cursor: not-allowed;
+.radio-checkmark:disabled {
+  @apply cursor-not-allowed
+  bg-gray-300;
 }
 
 /* On mouse-over, add a grey background color */

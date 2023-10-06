@@ -2,25 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer components {
-  button.check-work {
-    @apply relative 
-    h-6
-    inline-block 
-    text-white
-    /* bg-blue-700 */
-    p-0.5
-    rounded
-    mt-0
-    mr-4
-    mb-4
-    ml-0;
-  }
-  button.check-work:focus {
-    @apply outline-none
-     ring;
-  }
-  button.check-work:disabled {
-    @apply bg-gray-300 cursor-not-allowed;
-  }
+button.check-work {
+  @apply relative 
+  h-6
+  inline-block 
+  text-white
+  /* bg-blue-700 */
+  p-0.5
+  rounded
+  mt-0
+  mr-4
+  mb-4
+  ml-0;
+}
+button.check-work:focus {
+  @apply outline-none
+    ring;
+}
+button.check-work:disabled {
+  @apply bg-gray-300 cursor-not-allowed;
 }
