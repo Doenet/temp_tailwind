@@ -129,7 +129,7 @@ input.radio-input {
 
 /* Customize the label (the container) */
 .checkbox-container {
-  display: block;
+  /* display: block;
   position: relative;
   padding-left: 24px;
   margin-bottom: 4px;
@@ -137,37 +137,47 @@ input.radio-input {
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-  user-select: none;
+  user-select: none; */
+  @apply block
+  relative
+  pl-6
+  mb-1
+  cursor-pointer
+  select-none;
 }
 
 .checkbox-container label {
-  cursor: pointer;
+  @apply cursor-pointer;
 }
 
 .checkbox-container-disabled {
-  cursor: not-allowed;
+  @apply cursor-not-allowed;
 }
 
 .checkbox-container-disabled label {
-  cursor: not-allowed;
+  @apply cursor-not-allowed;
 }
 
 /* Hide the browser's default checkbox */
 .checkbox-container input {
-  position: absolute;
-  opacity: 0;
+  @apply absolute
+  /* opacity: 0;
   cursor: pointer;
   height: 1;
-  width: 1;
+  width: 1; */
+  opacity-0
+  cursor-pointer
+  h-1
+  w-1;
 }
 
 .checkbox-container-disabled input {
-  cursor: not-allowed;
+  @apply cursor-not-allowed;
 }
 
 /* Create a custom checkbox */
 .checkbox-checkmark {
-  position: absolute;
+  /* position: absolute;
   top: 0;
   left: 0;
   height: 18px;
@@ -175,34 +185,58 @@ input.radio-input {
   background-color: var(--mainGray);
   border-style: solid;
   border-color: var(--canvastext);
-  border-radius: var(--mainBorderRadius);
+  border-radius: var(--mainBorderRadius); */
+  @apply absolute
+  top-0
+  left-0
+  h-4
+  w-4
+  bg-white
+  border-2
+  border-solid 
+  border-blue-100
+  rounded-sm;
 }
 
 .checkbox-checkmark-disabled {
-  background-color: var(--mainGray);
+  /* background-color: var(--mainGray);
   border-color: var(--mainGray);
-  cursor: not-allowed;
+  cursor: not-allowed; */
+  @apply bg-blue-100
+  border
+  border-blue-100;
 }
 
 /* On mouse-over, add a light blue background color */
 .checkbox-container:hover input ~ .checkbox-checkmark {
-  background-color: var(--lightBlue);
+  /* background-color: var(--lightBlue); */
+  @apply bg-blue-100;
 }
 
 /* On mouse-over of disabled, keep the grey background color */
 .checkbox-container:hover input ~ .checkbox-checkmark-disabled {
-  background-color: var(--mainGray);
+  /* background-color: var(--mainGray); */
+  @apply bg-blue-100;
 }
 
 /* When the checkbox is checked, add a dark blue background */
 .checkbox-container input:checked ~ .checkbox-checkmark {
-  background-color: var(--mainBlue);
+  /* background-color: var(--mainBlue); */
+  @apply bg-blue-500
+  border-solid
+  border-blue-500
+  rounded-sm;
 }
 
 /* When a checkbox has focus, add a dark blue outline */
 .checkbox-container:focus-within input ~ .checkbox-checkmark {
-  outline: 2px solid var(--mainBlue);
-  outline-offset: 2px;
+  /* outline: 2px solid var(--mainBlue);
+  outline-offset: 2px; */
+  @apply outline-2
+  border-2
+  border-blue-300
+  rounded-sm
+  outline-offset-8;
 }
 
 /* Create the checkmark/indicator (hidden when not checked) */
