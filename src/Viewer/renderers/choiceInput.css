@@ -21,10 +21,12 @@
   mb-1
   cursor-pointer;
 }
+
 .radio-container:disabled,
 .radio-input:disabled {
   @apply cursor-not-allowed;
 }
+
 /* Hide the browser's default radio button */
 input.radio-input {
   /* position: absolute;
@@ -53,8 +55,9 @@ input.radio-input {
   @apply absolute
   top-0
   left-0
+  h-4
   w-4
-  bg-white
+  bg-gray-300
   border-solid
   border-gray-300
   rounded-full;
@@ -67,45 +70,59 @@ input.radio-input {
 
 /* On mouse-over, add a grey background color */
 .radio-container:hover input ~ .radio-checkmark {
-  background-color: var(--lightBlue);
+  /* background-color: var(--lightBlue); */
+  @apply bg-blue-300;
 }
 
 /* On mouse-over of disabled, keep the grey background color */
 .radio-container:hover input ~ .radio-checkmark-disabled {
-  background-color: var(--mainGray);
+  /* background-color: var(--mainGray); */
+  @apply bg-gray-300;
 }
 
 /* When the radio button is checked, add a blue background */
 .radio-container input:checked ~ .radio-checkmark {
-  background-color: var(--mainBlue);
+  /* background-color: var(--mainBlue); */
+  @apply bg-blue-700;
 }
 
 /* When a radio button has focus, add a dark blue outline */
 .radio-container:focus-within input ~ .radio-checkmark {
-  outline: 2px solid var(--mainBlue);
-  outline-offset: 2px;
+  /* outline: 2px solid var(--mainBlue);
+  outline-offset: 2px; */
+  @apply outline-none
+  ring;
 }
 
 /* Create the indicator (the dot/circle - hidden when not checked) */
 .radio-checkmark:after {
-  content: "";
+  /* content: "";
   position: absolute;
-  display: none;
+  display: none; */
+  @apply absolute
+  hidden;
 }
 
 /* Show the indicator (dot/circle) when checked */
 .radio-container input:checked ~ .radio-checkmark:after {
-  display: block;
+  /* display: block; */
+  @apply block;
 }
 
 /* Style the indicator (dot/circle) */
 .radio-container .radio-checkmark:after {
-  top: 6px;
+  /* top: 6px;
   left: 6px;
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--canvas);
+  background: var(--canvas); */
+  @apply top-1.5
+  left-1.5
+  w-1.5
+  h-1.5
+  rounded-full
+  bg-white;
 }
 
 /* CUSTOM STYLING FOR CHECKBOX */

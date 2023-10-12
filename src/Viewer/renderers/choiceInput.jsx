@@ -468,7 +468,6 @@ export default React.memo(function ChoiceInput(props) {
         } else if (inputType == "checkbox") {
           // selectMultiple="true"
           let checkboxDisabled = disabled || svData.choicesDisabled[i];
-          let containerClassName = "checkbox-container";
           let checkboxClassName = "checkbox-checkmark";
           if (checkboxDisabled) {
             containerClassName += " checkbox-container-disabled";
@@ -476,7 +475,7 @@ export default React.memo(function ChoiceInput(props) {
           }
           return (
             <label
-              className={containerClassName}
+              className="checkbox-container"
               key={inputKey + "_choice" + (i + 1)}
             >
               <input
