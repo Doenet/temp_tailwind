@@ -19,7 +19,8 @@
   relative
   pl-6
   mb-1
-  cursor-pointer;
+  cursor-pointer
+  select-none;
 }
 
 .radio-container:disabled,
@@ -83,7 +84,7 @@ input.radio-input {
 /* When the radio button is checked, add a blue background */
 .radio-container input:checked ~ .radio-checkmark {
   /* background-color: var(--mainBlue); */
-  @apply bg-blue-700;
+  @apply bg-blue-500;
 }
 
 /* When a radio button has focus, add a dark blue outline */
@@ -99,7 +100,8 @@ input.radio-input {
   /* content: "";
   position: absolute;
   display: none; */
-  @apply absolute
+  @apply content-[""]
+  absolute
   hidden;
 }
 
