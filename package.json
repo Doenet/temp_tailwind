@@ -61,6 +61,8 @@
     "cssesc": "^3.0.0",
     "csv-parse": "^5.3.6",
     "esm-seedrandom": "^3.0.5",
+    "flowbite": "^1.8.1",
+    "flowbite-react": "^0.6.4",
     "framer-motion": "^10.12.10",
     "handsontable": "^12.1.2",
     "hi-base32": "^0.5.1",
