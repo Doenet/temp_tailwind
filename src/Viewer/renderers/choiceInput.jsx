@@ -10,8 +10,11 @@ import {
 import { MathJax } from "better-react-mathjax";
 import { rendererState } from "../useDoenetRenderer";
 import { useSetRecoilState } from "recoil";
-import "./choiceInput.css";
-import "./answer.css";
+// import "./choiceInput.css";
+// import "./answer.css";
+
+("use client");
+import { Button, Label, Radio } from "flowbite-react";
 
 // Moved most of checkWorkStyle styling into Button
 // const Button = styled.button`
@@ -164,8 +167,9 @@ export default React.memo(function ChoiceInput(props) {
         //   ).getPropertyValue("--mainGray");
         // }
         checkWorkButton = (
-          <button
-            className="check-work bg-blue-700"
+          <Button
+            // className="check-work bg-blue-700"
+            color="dark"
             id={id + "_submit"}
             disabled={disabled}
             tabIndex="0"
@@ -192,15 +196,15 @@ export default React.memo(function ChoiceInput(props) {
               icon={faLevelDownAlt}
               transform={{ rotate: 90 }}
             />
-          </button>
+          </Button>
         );
       } else {
         if (SVs.showCorrectness) {
           if (validationState === "correct") {
             checkWorkButton = (
-              <button className="check-work bg-green-700" id={id + "_correct"}>
+              <Button className="check-work bg-green-700" id={id + "_correct"}>
                 <FontAwesomeIcon icon={faCheck} />
-              </button>
+              </Button>
             );
           } else if (validationState === "partialcorrect") {
             //partial credit
@@ -208,24 +212,24 @@ export default React.memo(function ChoiceInput(props) {
             let partialCreditContents = `${percent} %`;
 
             checkWorkButton = (
-              <button className="check-work bg-orange-700" id={id + "_partial"}>
+              <Button className="check-work bg-orange-700" id={id + "_partial"}>
                 {partialCreditContents}
-              </button>
+              </Button>
             );
           } else {
             //incorrect
             checkWorkButton = (
-              <button className="check-work bg-red-700" id={id + "_incorrect"}>
+              <Button className="check-work bg-red-700" id={id + "_incorrect"}>
                 <FontAwesomeIcon icon={faTimes} />
-              </button>
+              </Button>
             );
           }
         } else {
           // showCorrectness is false
           checkWorkButton = (
-            <button className="check-work bg-purple-700" id={id + "_saved"}>
+            <Button className="check-work bg-purple-700" id={id + "_saved"}>
               <FontAwesomeIcon icon={faCloud} />
-            </button>
+            </Button>
           );
         }
       }
@@ -322,8 +326,10 @@ export default React.memo(function ChoiceInput(props) {
         //   ).getPropertyValue("--mainGray");
         // }
         checkworkComponent = (
-          <button
-            className="check-work bg-blue-700"
+          <Button
+            // className="check-work bg-blue-700"
+            color="blue"
+            size="small"
             id={id + "_submit"}
             tabIndex="0"
             disabled={disabled}
@@ -351,40 +357,60 @@ export default React.memo(function ChoiceInput(props) {
             />
             &nbsp;
             {checkWorkText}
-          </button>
+          </Button>
         );
       } else {
         if (SVs.showCorrectness) {
           if (validationState === "correct") {
             checkworkComponent = (
-              <button className="check-work bg-green-700" id={id + "_correct"}>
+              <Button
+                // className="check-work bg-green-700"
+                color="success"
+                size="small"
+                id={id + "_correct"}
+              >
                 <FontAwesomeIcon icon={faCheck} />
                 &nbsp; Correct
-              </button>
+              </Button>
             );
           } else if (validationState === "incorrect") {
             checkworkComponent = (
-              <button className="check-work bg-red-700" id={id + "_incorrect"}>
+              <Button
+                // className="check-work bg-red-700"
+                color="failure"
+                size="small"
+                id={id + "_incorrect"}
+              >
                 <FontAwesomeIcon icon={faTimes} />
                 &nbsp; Incorrect
-              </button>
+              </Button>
             );
           } else if (validationState === "partialcorrect") {
             let percent = Math.round(SVs.creditAchieved * 100);
             let partialCreditContents = `${percent}% Correct`;
 
             checkworkComponent = (
-              <button className="check-work bg-orange-700" id={id + "_partial"}>
+              <Button
+                // className="check-work bg-orange-700"
+                color="warning"
+                size="small"
+                id={id + "_partial"}
+              >
                 {partialCreditContents}
-              </button>
+              </Button>
             );
           }
         } else {
           checkworkComponent = (
-            <button className="check-work bg-purple-700" id={id + "_saved"}>
+            <Button
+              // className="check-work bg-purple-700"
+              color="purple"
+              size="small"
+              id={id + "_saved"}
+            >
               <FontAwesomeIcon icon={faCloud} />
               &nbsp; Response Saved
-            </button>
+            </Button>
           );
         }
       }
@@ -442,11 +468,11 @@ export default React.memo(function ChoiceInput(props) {
             radioClassName += " radio-checkmark-disabled";
           }
           return (
-            <label
-              className="radio-container"
+            <div
+              className="flex items-center gap-2"
               key={inputKey + "_choice" + (i + 1)}
             >
-              <input
+              <Radio
                 className="radio-input"
                 type="radio"
                 id={keyBeginning + (i + 1) + "_input"}
@@ -456,14 +482,14 @@ export default React.memo(function ChoiceInput(props) {
                 onChange={onChangeHandler}
                 disabled={radioDisabled}
               />
-              <span className="radio-checkmark" />
-              <label
+              {/* <span className="radio-checkmark" /> */}
+              <Label
                 htmlFor={keyBeginning + (i + 1) + "_input"}
                 className="ml-2"
               >
                 {child}
-              </label>
-            </label>
+              </Label>
+            </div>
           );
         } else if (inputType == "checkbox") {
           // selectMultiple="true"
@@ -502,10 +528,12 @@ export default React.memo(function ChoiceInput(props) {
     return (
       <div id={inputKey + "-label"}>
         {label}
-        <ol id={inputKey} style={listStyle}>
-          <a name={id} />
+        {/* <ol id={inputKey} style={listStyle}> */}
+        {/* <a name={id} /> */}
+        <fieldset className="flex max-w-md flex-col gap-4" id="radio">
           {choiceDoenetTags}
-        </ol>
+        </fieldset>
+        {/* </ol> */}
         {checkworkComponent}
       </div>
     );

@@ -7,7 +7,10 @@ import {
   faTimes,
   faCloud,
 } from "@fortawesome/free-solid-svg-icons";
-import "./answer.css";
+// import "./answer.css";
+
+("use client");
+import { Button } from "flowbite-react";
 
 // Moved most of this styling into answer.css
 // const Button = styled.button`
@@ -83,8 +86,9 @@ export default React.memo(function Answer(props) {
       checkWorkText = SVs.submitLabelNoCorrectness;
     }
     let checkworkComponent = (
-      <button
-        className="check-work bg-blue-700"
+      <Button
+        // className="check-work bg-blue-700"
+        color="dark"
         id={id + "_submit"}
         tabIndex="0"
         disabled={disabled}
@@ -106,42 +110,42 @@ export default React.memo(function Answer(props) {
         />
         &nbsp;
         {checkWorkText}
-      </button>
+      </Button>
     );
 
     if (SVs.showCorrectness) {
       if (validationState === "correct") {
         checkworkComponent = (
-          <button className="check-work bg-green-700" id={id + "_correct"}>
+          <Button className="check-work bg-green-700" id={id + "_correct"}>
             <FontAwesomeIcon icon={faCheck} />
             &nbsp; Correct
-          </button>
+          </Button>
         );
       } else if (validationState === "incorrect") {
         checkworkComponent = (
-          <button className="check-work bg-red-700" id={id + "_incorrect"}>
+          <Button className="check-work bg-red-700" id={id + "_incorrect"}>
             <FontAwesomeIcon icon={faTimes} />
             &nbsp; Incorrect
-          </button>
+          </Button>
         );
       } else if (validationState === "partialcorrect") {
         let percent = Math.round(SVs.creditAchieved * 100);
         let partialCreditContents = `${percent}% Correct`;
 
         checkworkComponent = (
-          <button className="check-work bg-orange-700" id={id + "_partial"}>
+          <Button className="check-work bg-orange-700" id={id + "_partial"}>
             {partialCreditContents}
-          </button>
+          </Button>
         );
       }
     } else {
       // showCorrectness is false
       if (validationState !== "unvalidated") {
         checkworkComponent = (
-          <button className="check-work bg-purple-700" id={id + "_saved"}>
+          <Button className="check-work bg-purple-700" id={id + "_saved"}>
             <FontAwesomeIcon icon={faCloud} />
             &nbsp; Response Saved
-          </button>
+          </Button>
         );
       }
     }
