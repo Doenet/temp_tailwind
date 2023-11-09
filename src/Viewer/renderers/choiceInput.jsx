@@ -14,7 +14,7 @@ import { useSetRecoilState } from "recoil";
 // import "./answer.css";
 
 ("use client");
-import { Button, Label, Radio } from "flowbite-react";
+import { Button, Label, Radio, Checkbox } from "flowbite-react";
 
 // Moved most of checkWorkStyle styling into Button
 // const Button = styled.button`
@@ -500,27 +500,31 @@ export default React.memo(function ChoiceInput(props) {
             checkboxClassName += " checkbox-checkmark-disabled";
           }
           return (
-            <label
+            <Label
+              class="flex items-center"
               className="checkbox-container"
               key={inputKey + "_choice" + (i + 1)}
             >
-              <input
-                type="checkbox"
-                id={keyBeginning + (i + 1) + "_input"}
-                name={inputKey}
-                value={i + 1}
-                checked={rendererSelectedIndices.includes(i + 1)}
-                onChange={onChangeHandler}
-                disabled={disabled || svData.choicesDisabled[i]}
-              />
+              <div class="flex items-center">
+                <Checkbox
+                  class="w-4 h-4 text-blue-500 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  type="checkbox"
+                  id={keyBeginning + (i + 1) + "_input"}
+                  name={inputKey}
+                  value={i + 1}
+                  checked={rendererSelectedIndices.includes(i + 1)}
+                  onChange={onChangeHandler}
+                  disabled={disabled || svData.choicesDisabled[i]}
+                />
+              </div>
               <span className={checkboxClassName} />
-              <label
+              <Label
                 htmlFor={keyBeginning + (i + 1) + "_input"}
                 className="ml-2"
               >
                 {child}
-              </label>
-            </label>
+              </Label>
+            </Label>
           );
         }
       });

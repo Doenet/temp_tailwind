@@ -204,7 +204,7 @@ input.radio-input {
   /* background-color: var(--mainGray);
   border-color: var(--mainGray);
   cursor: not-allowed; */
-  @apply bg-blue-100
+  @apply bg-blue-600
   border
   border-blue-100;
 }
