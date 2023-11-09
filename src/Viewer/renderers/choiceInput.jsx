@@ -500,23 +500,26 @@ export default React.memo(function ChoiceInput(props) {
             checkboxClassName += " checkbox-checkmark-disabled";
           }
           return (
-            <Label
+            // <Label
+            //   class="flex items-center"
+            //   className="checkbox-container"
+            //   key={inputKey + "_choice" + (i + 1)}
+            // >
+            <div
               class="flex items-center"
               className="checkbox-container"
               key={inputKey + "_choice" + (i + 1)}
             >
-              <div class="flex items-center">
-                <Checkbox
-                  class="w-4 h-4 text-blue-500 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                  type="checkbox"
-                  id={keyBeginning + (i + 1) + "_input"}
-                  name={inputKey}
-                  value={i + 1}
-                  checked={rendererSelectedIndices.includes(i + 1)}
-                  onChange={onChangeHandler}
-                  disabled={disabled || svData.choicesDisabled[i]}
-                />
-              </div>
+              <Checkbox
+                class="w-4 h-4 text-blue-500 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                type="checkbox"
+                id={keyBeginning + (i + 1) + "_input"}
+                name={inputKey}
+                value={i + 1}
+                checked={rendererSelectedIndices.includes(i + 1)}
+                onChange={onChangeHandler}
+                disabled={disabled || svData.choicesDisabled[i]}
+              />
               <span className={checkboxClassName} />
               <Label
                 htmlFor={keyBeginning + (i + 1) + "_input"}
@@ -524,7 +527,8 @@ export default React.memo(function ChoiceInput(props) {
               >
                 {child}
               </Label>
-            </Label>
+            </div>
+            // </Label>
           );
         }
       });
