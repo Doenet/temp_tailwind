@@ -287,7 +287,7 @@ export default React.memo(function ChoiceInput(props) {
         <label for={id} className="select-label" id={id + "-label"}>
           {label}
           <select
-            className="custom-select"
+            className="select-input"
             id={id}
             onChange={onChangeHandler}
             value={value}
@@ -467,7 +467,7 @@ export default React.memo(function ChoiceInput(props) {
           // }
           return (
             <div
-              className="flex items-center mb-2"
+              className="flex items-center mb-4"
               key={inputKey + "_choice" + (i + 1)}
             >
               <input
@@ -480,10 +480,9 @@ export default React.memo(function ChoiceInput(props) {
                 onChange={onChangeHandler}
                 disabled={radioDisabled}
               />
-              {/* <span className="radio-checkmark" /> */}
               <label
                 htmlFor={keyBeginning + (i + 1) + "_input"}
-                className="radio-label"
+                className={radioDisabled ? "label-disabled" : "radio-label"}
               >
                 {child}
               </label>
@@ -493,40 +492,35 @@ export default React.memo(function ChoiceInput(props) {
           // selectMultiple="true"
           let checkboxDisabled = disabled || svData.choicesDisabled[i];
           let checkboxClassName = "checkbox-checkmark";
-          if (checkboxDisabled) {
-            containerClassName += " checkbox-container-disabled";
-            checkboxClassName += " checkbox-checkmark-disabled";
-          }
+          // if (checkboxDisabled) {
+          //   containerClassName += " checkbox-container-disabled";
+          //   checkboxClassName += " checkbox-checkmark-disabled";
+          // }
           return (
-            // <Label
-            //   class="flex items-center"
-            //   className="checkbox-container"
-            //   key={inputKey + "_choice" + (i + 1)}
-            // >
             <div
-              class="flex items-center"
-              className="checkbox-container"
+              className="flex items-center mb-4"
               key={inputKey + "_choice" + (i + 1)}
             >
-              <Checkbox
-                class="w-4 h-4 text-blue-500 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+              <input
+                className="checkbox-input"
                 type="checkbox"
                 id={keyBeginning + (i + 1) + "_input"}
                 name={inputKey}
                 value={i + 1}
                 checked={rendererSelectedIndices.includes(i + 1)}
                 onChange={onChangeHandler}
-                disabled={disabled || svData.choicesDisabled[i]}
+                disabled={checkboxDisabled}
               />
               <span className={checkboxClassName} />
-              <Label
+              <label
                 htmlFor={keyBeginning + (i + 1) + "_input"}
-                className="ml-2"
+                className={
+                  checkboxDisabled ? "label-disabled" : "checkbox-label"
+                }
               >
                 {child}
-              </Label>
+              </label>
             </div>
-            // </Label>
           );
         }
       });
@@ -536,9 +530,7 @@ export default React.memo(function ChoiceInput(props) {
         {label}
         {/* <ol id={inputKey} style={listStyle}> */}
         {/* <a name={id} /> */}
-        <fieldset className="flex max-w-md flex-col gap-4" id="radio">
-          {choiceDoenetTags}
-        </fieldset>
+        <fieldset id="radio">{choiceDoenetTags}</fieldset>
         {/* </ol> */}
         {checkworkComponent}
       </div>
