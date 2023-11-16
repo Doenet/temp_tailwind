@@ -168,7 +168,7 @@ export default React.memo(function ChoiceInput(props) {
         // }
         checkWorkButton = (
           <button
-            className="check-work bg-blue-700"
+            className="check-work-default"
             color="dark"
             id={id + "_submit"}
             disabled={disabled}
@@ -202,7 +202,7 @@ export default React.memo(function ChoiceInput(props) {
         if (SVs.showCorrectness) {
           if (validationState === "correct") {
             checkWorkButton = (
-              <button className="check-work bg-green-700" id={id + "_correct"}>
+              <button className="check-work-green" id={id + "_correct"}>
                 <FontAwesomeIcon icon={faCheck} />
               </button>
             );
@@ -212,14 +212,14 @@ export default React.memo(function ChoiceInput(props) {
             let partialCreditContents = `${percent} %`;
 
             checkWorkButton = (
-              <button className="check-work bg-orange-700" id={id + "_partial"}>
+              <button className="check-work-yellow" id={id + "_partial"}>
                 {partialCreditContents}
               </button>
             );
           } else {
             //incorrect
             checkWorkButton = (
-              <button className="check-work bg-red-700" id={id + "_incorrect"}>
+              <button className="check-work-red" id={id + "_incorrect"}>
                 <FontAwesomeIcon icon={faTimes} />
               </button>
             );
@@ -227,7 +227,7 @@ export default React.memo(function ChoiceInput(props) {
         } else {
           // showCorrectness is false
           checkWorkButton = (
-            <button className="check-work bg-purple-700" id={id + "_saved"}>
+            <button className="check-work-purple" id={id + "_saved"}>
               <FontAwesomeIcon icon={faCloud} />
             </button>
           );
@@ -284,7 +284,7 @@ export default React.memo(function ChoiceInput(props) {
     return (
       <React.Fragment>
         <a name={id} />
-        <label className="select-label" id={id + "-label"}>
+        <label for={id} className="select-label" id={id + "-label"}>
           {label}
           <select
             className="custom-select"
@@ -327,7 +327,7 @@ export default React.memo(function ChoiceInput(props) {
         // }
         checkworkComponent = (
           <button
-            className="check-work bg-blue-700"
+            className="check-work-default"
             id={id + "_submit"}
             tabIndex="0"
             disabled={disabled}
@@ -362,7 +362,7 @@ export default React.memo(function ChoiceInput(props) {
           if (validationState === "correct") {
             checkworkComponent = (
               <button
-                className="check-work bg-green-700"
+                className="check-work-green"
                 color="success"
                 size="small"
                 id={id + "_correct"}
@@ -374,7 +374,7 @@ export default React.memo(function ChoiceInput(props) {
           } else if (validationState === "incorrect") {
             checkworkComponent = (
               <button
-                className="check-work bg-red-700"
+                className="check-work-red"
                 color="failure"
                 size="small"
                 id={id + "_incorrect"}
@@ -389,7 +389,7 @@ export default React.memo(function ChoiceInput(props) {
 
             checkworkComponent = (
               <button
-                className="check-work bg-orange-700"
+                className="check-work-yellow"
                 color="warning"
                 size="small"
                 id={id + "_partial"}
@@ -401,7 +401,7 @@ export default React.memo(function ChoiceInput(props) {
         } else {
           checkworkComponent = (
             <button
-              className="check-work bg-purple-700"
+              className="check-work-purple"
               color="purple"
               size="small"
               id={id + "_saved"}
@@ -461,10 +461,10 @@ export default React.memo(function ChoiceInput(props) {
           let radioDisabled = disabled || svData.choicesDisabled[i];
           // let containerClassName = "radio-container";
           // let radioClassName = "radio-checkmark";
-          if (radioDisabled) {
-            containerClassName += " radio-container-disabled";
-            radioClassName += " radio-checkmark-disabled";
-          }
+          // if (radioDisabled) {
+          //   containerClassName += " radio-container-disabled";
+          //   radioClassName += " radio-checkmark-disabled";
+          // }
           return (
             <div
               className="flex items-center mb-2"
