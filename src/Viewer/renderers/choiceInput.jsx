@@ -13,9 +13,6 @@ import { useSetRecoilState } from "recoil";
 import "./choiceInput.css";
 import "./answer.css";
 
-("use client");
-import { Button, Label, Radio, Checkbox } from "flowbite-react";
-
 // Moved most of checkWorkStyle styling into Button
 // const Button = styled.button`
 //   position: relative;
@@ -169,7 +166,6 @@ export default React.memo(function ChoiceInput(props) {
         checkWorkButton = (
           <button
             className="check-work-default"
-            color="dark"
             id={id + "_submit"}
             disabled={disabled}
             tabIndex="0"
@@ -482,7 +478,7 @@ export default React.memo(function ChoiceInput(props) {
               />
               <label
                 htmlFor={keyBeginning + (i + 1) + "_input"}
-                className={radioDisabled ? "label-disabled" : "radio-label"}
+                className="label"
               >
                 {child}
               </label>
@@ -491,7 +487,7 @@ export default React.memo(function ChoiceInput(props) {
         } else if (inputType == "checkbox") {
           // selectMultiple="true"
           let checkboxDisabled = disabled || svData.choicesDisabled[i];
-          let checkboxClassName = "checkbox-checkmark";
+          // let checkboxClassName = "checkbox-checkmark";
           // if (checkboxDisabled) {
           //   containerClassName += " checkbox-container-disabled";
           //   checkboxClassName += " checkbox-checkmark-disabled";
@@ -511,12 +507,11 @@ export default React.memo(function ChoiceInput(props) {
                 onChange={onChangeHandler}
                 disabled={checkboxDisabled}
               />
-              <span className={checkboxClassName} />
+              {/* <span className={checkboxClassName} /> */}
               <label
                 htmlFor={keyBeginning + (i + 1) + "_input"}
-                className={
-                  checkboxDisabled ? "label-disabled" : "checkbox-label"
-                }
+                className="label"
+                disabled={disabled}
               >
                 {child}
               </label>

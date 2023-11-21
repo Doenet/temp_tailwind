@@ -18,42 +18,25 @@ input.radio-input {
   dark:ring-offset-gray-800 
   focus:ring-2 
   dark:bg-gray-700 
-  dark:border-gray-600;
+  dark:border-gray-600
+  disabled:cursor-not-allowed;
 }
 
-label.radio-label {
+label.label {
   @apply ms-2
   text-sm
   font-medium
   text-gray-900
-  dark:text-gray-300;
-}
-
-/*
-FLOWBITE STYLING FOR DISABLED LABEL
-https://flowbite.com/docs/forms/radio/#disabled-state 
-https://flowbite.com/docs/forms/checkbox/#disabled-state
-*/
-
-label.label-disabled {
-  @apply ms-2
-  text-sm
-  font-medium
-  text-gray-400
-  dark:text-gray-500;
+  dark:text-gray-300
+  disabled:text-gray-400
+  disabled:dark:text-gray-500
+  disabled:cursor-not-allowed;
 }
 
 /* 
 FLOWBITE STYLING FOR CHECKBOX
 https://flowbite.com/docs/forms/checkbox/
 */
-label.checkbox-label {
-  @apply ms-2
-  text-sm
-  font-medium
-  text-gray-900
-  dark:text-gray-300;
-}
 
 input.checkbox-input {
   @apply w-3
@@ -67,7 +50,8 @@ input.checkbox-input {
   dark:ring-offset-gray-800
   focus:ring-2
   dark:bg-gray-700
-  dark:border-gray-600;
+  dark:border-gray-600
+  disabled:cursor-not-allowed;
 }
 
 /*

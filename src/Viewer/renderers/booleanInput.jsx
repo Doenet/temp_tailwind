@@ -17,28 +17,30 @@ import { MathJax } from "better-react-mathjax";
 import { BoardContext } from "./graph";
 import me from "math-expressions";
 import { getPositionFromAnchorByCoordinate } from "../../Core/utils/graphical";
+import "./choiceInput.css";
+import "./answer.css";
 
 // Moved most of checkWorkStyle styling into Button
-const Button = styled.button`
-  position: relative;
-  width: 24px;
-  height: 24px;
-  color: #ffffff;
-  background-color: var(--mainBlue);
-  display: inline-block;
-  /* text-align: center; */
-  padding: 2px;
-  /* z-index: 0; */
-  /* border: var(--mainBorder); */
-  border: none;
-  border-radius: var(--mainBorderRadius);
-  margin: 0px 4px 4px 0px;
+// const Button = styled.button`
+//   position: relative;
+//   width: 24px;
+//   height: 24px;
+//   color: #ffffff;
+//   background-color: var(--mainBlue);
+//   display: inline-block;
+//   /* text-align: center; */
+//   padding: 2px;
+//   /* z-index: 0; */
+//   /* border: var(--mainBorder); */
+//   border: none;
+//   border-radius: var(--mainBorderRadius);
+//   margin: 0px 4px 4px 0px;
 
-  &:hover {
-    background-color: var(--lightBlue);
-    color: black;
-  }
-`;
+//   &:hover {
+//     background-color: var(--lightBlue);
+//     color: black;
+//   }
+// `;
 
 export default React.memo(function BooleanInput(props) {
   let { name, id, SVs, actions, ignoreUpdate, rendererName, callAction } =
@@ -473,7 +475,8 @@ export default React.memo(function BooleanInput(props) {
         checkWorkStyle.cursor = "not-allowed";
       }
       checkWorkButton = (
-        <Button
+        <button
+          className="check-work-default"
           id={id + "_submit"}
           tabIndex="0"
           disabled={disabled}
@@ -501,51 +504,40 @@ export default React.memo(function BooleanInput(props) {
             icon={faLevelDownAlt}
             transform={{ rotate: 90 }}
           />
-        </Button>
+        </button>
       );
     } else {
       if (SVs.showCorrectness) {
         if (validationState === "correct") {
-          checkWorkStyle.backgroundColor = getComputedStyle(
-            document.documentElement,
-          ).getPropertyValue("--mainGreen");
           checkWorkButton = (
-            <Button id={id + "_correct"} style={checkWorkStyle}>
+            <button className="check-work-green" id={id + "_correct"}>
               <FontAwesomeIcon icon={faCheck} />
-            </Button>
+            </button>
           );
         } else if (validationState === "partialcorrect") {
           //partial credit
-
           let percent = Math.round(SVs.creditAchieved * 100);
           let partialCreditContents = `${percent} %`;
-          checkWorkStyle.width = "44px";
 
-          checkWorkStyle.backgroundColor = "#efab34";
           checkWorkButton = (
-            <Button id={id + "_partial"} style={checkWorkStyle}>
+            <button className="check-work-yellow" id={id + "_partial"}>
               {partialCreditContents}
-            </Button>
+            </button>
           );
         } else {
           //incorrect
-          checkWorkStyle.backgroundColor = getComputedStyle(
-            document.documentElement,
-          ).getPropertyValue("--mainRed");
           checkWorkButton = (
-            <Button id={id + "_incorrect"} style={checkWorkStyle}>
+            <button className="check-work-red" id={id + "_incorrect"}>
               <FontAwesomeIcon icon={faTimes} />
-            </Button>
+            </button>
           );
         }
       } else {
         // showCorrectness is false
-        checkWorkStyle.backgroundColor = "rgb(74, 3, 217)";
-        checkWorkStyle.padding = "1px 8px 1px 4px"; // To center the faCloud icon
         checkWorkButton = (
-          <Button id={id + "_saved"} style={checkWorkStyle}>
+          <button className="check-work-purple" id={id + "_saved"}>
             <FontAwesomeIcon icon={faCloud} />
-          </Button>
+          </button>
         );
       }
     }
@@ -585,7 +577,7 @@ export default React.memo(function BooleanInput(props) {
   }
   if (SVs.asToggleButton) {
     input = (
-      <ToggleButton
+      <ToggleButton // TODO: convert ToggleButton into Flowbite component
         id={inputKey}
         key={inputKey}
         isSelected={rendererValue}
@@ -595,15 +587,16 @@ export default React.memo(function BooleanInput(props) {
       />
     );
   } else {
-    let containerClass = "container";
-    let checkmarkClass = "checkmark";
-    if (disabled) {
-      containerClass += " container-disabled";
-      checkmarkClass += " checkmark-disabled";
-    }
+    // let containerClass = "container";
+    // let checkmarkClass = "checkmark";
+    // if (disabled) {
+    // containerClass += " container-disabled";
+    // checkmarkClass += " checkmark-disabled";
+    // }
     input = (
-      <label className={containerClass}>
+      <div className="flex items-center mb-4">
         <input
+          className="checkbox-input"
           type="checkbox"
           key={inputKey}
           id={inputKey}
@@ -611,13 +604,9 @@ export default React.memo(function BooleanInput(props) {
           onChange={onChangeHandler}
           disabled={disabled}
         />
-        <span className={checkmarkClass}></span>
-        {label != "" ? (
-          <span style={{ marginLeft: "2px" }}>{label}</span>
-        ) : (
-          <span>{label}</span>
-        )}
-      </label>
+        {/* <span className={checkmarkClass}></span> */}
+        <label className="label">{label}</label>
+      </div>
     );
     {
       checkWorkButton;
