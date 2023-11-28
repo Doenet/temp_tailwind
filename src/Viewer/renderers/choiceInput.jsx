@@ -13,28 +13,6 @@ import { useSetRecoilState } from "recoil";
 import "./choiceInput.css";
 import "./answer.css";
 
-// Moved most of checkWorkStyle styling into Button
-// const Button = styled.button`
-//   position: relative;
-//   /* width: 24px; */
-//   height: 24px;
-//   color: #ffffff;
-//   background-color: var(--mainBlue);
-//   display: inline-block;
-//   text-align: center;
-//   padding: 2px;
-//   z-index: 0;
-//   /* border: var(--mainBorder); */
-//   border: none;
-//   border-radius: var(--mainBorderRadius);
-//   margin: 0px 4px 4px 0px;
-
-//   &:hover {
-//     background-color: var(--lightBlue);
-//     color: black;
-//   }
-// `;
-
 export default React.memo(function ChoiceInput(props) {
   let {
     name,
@@ -148,21 +126,10 @@ export default React.memo(function ChoiceInput(props) {
   }
 
   if (SVs.inline) {
-    // let checkWorkStyle = {
-    //   cursor: "pointer",
-    //   padding: "1px 6px 1px 6px",
-    //   width: "24px",
-    // };
-
     //Assume we don't have a check work button
     let checkWorkButton = null;
     if (SVs.includeCheckWork && !SVs.suppressCheckwork) {
       if (validationState === "unvalidated") {
-        // if (disabled) {
-        //   checkWorkStyle.backgroundColor = getComputedStyle(
-        //     document.documentElement,
-        //   ).getPropertyValue("--mainGray");
-        // }
         checkWorkButton = (
           <button
             className="check-work-default"
@@ -183,15 +150,7 @@ export default React.memo(function ChoiceInput(props) {
               }
             }}
           >
-            <FontAwesomeIcon
-              style={
-                {
-                  /*marginRight: "4px", paddingLeft: "2px"*/
-                }
-              }
-              icon={faLevelDownAlt}
-              transform={{ rotate: 90 }}
-            />
+            <FontAwesomeIcon icon={faLevelDownAlt} transform={{ rotate: 90 }} />
           </button>
         );
       } else {
@@ -300,14 +259,6 @@ export default React.memo(function ChoiceInput(props) {
       </React.Fragment>
     );
   } else {
-    // let checkWorkStyle = {
-    //   height: "24px",
-    //   display: "inline-block",
-    //   padding: "1px 6px 1px 6px",
-    //   cursor: "pointer",
-    //   // fontWeight: "bold",
-    // };
-
     let checkworkComponent = null;
 
     if (SVs.includeCheckWork && !SVs.suppressCheckwork) {
@@ -316,11 +267,6 @@ export default React.memo(function ChoiceInput(props) {
         if (!SVs.showCorrectness) {
           checkWorkText = SVs.submitLabelNoCorrectness;
         }
-        // if (disabled) {
-        //   checkWorkStyle.backgroundColor = getComputedStyle(
-        //     document.documentElement,
-        //   ).getPropertyValue("--mainGray");
-        // }
         checkworkComponent = (
           <button
             className="check-work-default"
@@ -340,15 +286,7 @@ export default React.memo(function ChoiceInput(props) {
               }
             }}
           >
-            <FontAwesomeIcon
-              style={
-                {
-                  /*marginRight: "4px", paddingLeft: "2px"*/
-                }
-              }
-              icon={faLevelDownAlt}
-              transform={{ rotate: 90 }}
-            />
+            <FontAwesomeIcon icon={faLevelDownAlt} transform={{ rotate: 90 }} />
             &nbsp;
             {checkWorkText}
           </button>
@@ -455,12 +393,6 @@ export default React.memo(function ChoiceInput(props) {
         if (inputType == "radio") {
           // selectMultiple="false"
           let radioDisabled = disabled || svData.choicesDisabled[i];
-          // let containerClassName = "radio-container";
-          // let radioClassName = "radio-checkmark";
-          // if (radioDisabled) {
-          //   containerClassName += " radio-container-disabled";
-          //   radioClassName += " radio-checkmark-disabled";
-          // }
           return (
             <div
               className="flex items-center mb-4"
@@ -487,11 +419,6 @@ export default React.memo(function ChoiceInput(props) {
         } else if (inputType == "checkbox") {
           // selectMultiple="true"
           let checkboxDisabled = disabled || svData.choicesDisabled[i];
-          // let checkboxClassName = "checkbox-checkmark";
-          // if (checkboxDisabled) {
-          //   containerClassName += " checkbox-container-disabled";
-          //   checkboxClassName += " checkbox-checkmark-disabled";
-          // }
           return (
             <div
               className="flex items-center mb-4"
@@ -507,7 +434,7 @@ export default React.memo(function ChoiceInput(props) {
                 onChange={onChangeHandler}
                 disabled={checkboxDisabled}
               />
-              {/* <span className={checkboxClassName} /> */}
+              ={" "}
               <label
                 htmlFor={keyBeginning + (i + 1) + "_input"}
                 className="label"

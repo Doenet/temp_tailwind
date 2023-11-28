@@ -7,28 +7,7 @@ import {
   faTimes,
   faCloud,
 } from "@fortawesome/free-solid-svg-icons";
-// import "./answer.css";
-
-("use client");
-import { Button } from "flowbite-react";
-
-// Moved most of this styling into answer.css
-// const Button = styled.button`
-//   position: relative;
-//   height: 24px;
-//   display: inline-block;
-//   color: white;
-//   background-color: var(--mainblue);
-//   padding: 2px;
-//   /* border: var(--mainBorder); */
-//   border-radius: var(--mainBorderRadius);
-//   margin: 0px 4px 4px 0px;
-
-//   &:hover {
-//     background-color: var(--lightBlue);
-//     color: black;
-//   }
-// `;
+import "./answer.css";
 
 export default React.memo(function Answer(props) {
   let { name, id, SVs, actions, children, callAction } =
@@ -87,7 +66,6 @@ export default React.memo(function Answer(props) {
     }
     let checkworkComponent = (
       <Button
-        // className="check-work bg-blue-700"
         color="dark"
         id={id + "_submit"}
         tabIndex="0"
@@ -99,15 +77,7 @@ export default React.memo(function Answer(props) {
           }
         }}
       >
-        <FontAwesomeIcon
-          style={
-            {
-              /*marginRight: "4px", paddingLeft: "2px"*/
-            }
-          }
-          icon={faLevelDownAlt}
-          transform={{ rotate: 90 }}
-        />
+        <FontAwesomeIcon icon={faLevelDownAlt} transform={{ rotate: 90 }} />
         &nbsp;
         {checkWorkText}
       </Button>

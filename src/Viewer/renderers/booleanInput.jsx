@@ -20,28 +20,6 @@ import { getPositionFromAnchorByCoordinate } from "../../Core/utils/graphical";
 import "./choiceInput.css";
 import "./answer.css";
 
-// Moved most of checkWorkStyle styling into Button
-// const Button = styled.button`
-//   position: relative;
-//   width: 24px;
-//   height: 24px;
-//   color: #ffffff;
-//   background-color: var(--mainBlue);
-//   display: inline-block;
-//   /* text-align: center; */
-//   padding: 2px;
-//   /* z-index: 0; */
-//   /* border: var(--mainBorder); */
-//   border: none;
-//   border-radius: var(--mainBorderRadius);
-//   margin: 0px 4px 4px 0px;
-
-//   &:hover {
-//     background-color: var(--lightBlue);
-//     color: black;
-//   }
-// `;
-
 export default React.memo(function BooleanInput(props) {
   let { name, id, SVs, actions, ignoreUpdate, rendererName, callAction } =
     useDoenetRenderer(props);
@@ -495,15 +473,7 @@ export default React.memo(function BooleanInput(props) {
             }
           }}
         >
-          <FontAwesomeIcon
-            style={
-              {
-                /*marginRight: "4px", paddingLeft: "2px"*/
-              }
-            }
-            icon={faLevelDownAlt}
-            transform={{ rotate: 90 }}
-          />
+          <FontAwesomeIcon icon={faLevelDownAlt} transform={{ rotate: 90 }} />
         </button>
       );
     } else {
@@ -587,12 +557,6 @@ export default React.memo(function BooleanInput(props) {
       />
     );
   } else {
-    // let containerClass = "container";
-    // let checkmarkClass = "checkmark";
-    // if (disabled) {
-    // containerClass += " container-disabled";
-    // checkmarkClass += " checkmark-disabled";
-    // }
     input = (
       <div className="flex items-center mb-4">
         <input
@@ -604,7 +568,6 @@ export default React.memo(function BooleanInput(props) {
           onChange={onChangeHandler}
           disabled={disabled}
         />
-        {/* <span className={checkmarkClass}></span> */}
         <label className="label">{label}</label>
       </div>
     );

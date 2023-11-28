@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+FLOWBITE STYLING FOR DEFAULT BUTTON
+https://flowbite.com/docs/components/buttons/#default-button
+*/
+
 button.check-work-default {
   @apply text-white
   bg-blue-700
@@ -84,10 +89,3 @@ button.check-work-purple {
   dark:hover:bg-purple-700
   dark:focus:ring-purple-900;
 }
-/* button.check-work:focus {
-  @apply outline-none
-    ring;
-}
-button.check-work:disabled {
-  @apply bg-gray-300 cursor-not-allowed;
-} */
