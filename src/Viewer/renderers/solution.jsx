@@ -1,26 +1,12 @@
 import React, { useEffect } from "react";
 import useDoenetRenderer from "../useDoenetRenderer";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPuzzlePiece as puzzle } from "@fortawesome/free-solid-svg-icons";
+import {
+  faChevronDown,
+  faPuzzlePiece,
+} from "@fortawesome/free-solid-svg-icons";
 import VisibilitySensor from "react-visibility-sensor-v2";
-import styled from "styled-components";
-import P from "../../Core/components/P";
-const SpanStyling = styled.span`
-  // display: block;
-  // margin: SVs.open ? 12px 4px 0px 4px : 12px 4px 12px 4px;
-  // padding: 6px;
-  // border: 2px solid black;
-  // border-top-left-radius: 5px;
-  // border-top-right-radius: 5px;
-  // border-bottom-left-radius: SVs.open ? 0px : 5px;
-  // border-bottom-right-radius: SVs.open ? 0px : 5px;
-  // background-color: var(--mainGray);
-  // cursor: pointer;
-  &: focus {
-    outline: 2px solid var(--canvastext);
-    outline-offset: 2px;
-  }
-`;
+import { TECollapse } from "tw-elements-react";
 
 export default React.memo(function Solution(props) {
   let { name, id, SVs, children, actions, callAction } =
@@ -41,95 +27,63 @@ export default React.memo(function Solution(props) {
       });
     };
   }, []);
-  let openCloseText = "open";
 
   if (SVs.hidden) {
     return null;
   }
 
-  let icon;
-  let childrenToRender = null;
-  let infoBlockStyle = { display: "none" };
-
-  let onClickFunction;
-  let cursorStyle;
-  let onKeyPressFunction;
-
-  if (SVs.open) {
-    icon = <FontAwesomeIcon icon={puzzle} />;
-    openCloseText = "close";
-    childrenToRender = children;
-    infoBlockStyle = {
-      display: "block",
-      margin: "0px 4px 12px 4px",
-      padding: "6px",
-      border: "2px solid var(--canvastext)",
-      borderTop: "0px",
-      borderBottomLeftRadius: "5px",
-      borderBottomRightRadius: "5px",
-      backgroundColor: "var(--canvas)",
-    };
-    onKeyPressFunction = (e) => {
-      if (e.key === "Enter") {
-        callAction({
-          action: actions.closeSolution,
-        });
-      }
-    };
-
-    if (SVs.canBeClosed) {
-      cursorStyle = "pointer";
-      onClickFunction = () => {
-        callAction({
-          action: actions.closeSolution,
-        });
-      };
-    } else {
-      onClickFunction = () => {};
-    }
-  } else {
-    icon = <FontAwesomeIcon icon={puzzle} rotation={90} />;
-    cursorStyle = "pointer";
-    onClickFunction = () => {
-      callAction({
-        action: actions.revealSolution,
-      });
-    };
-    onKeyPressFunction = (e) => {
-      if (e.key === "Enter") {
-        callAction({
-          action: actions.revealSolution,
-        });
-      }
-    };
-  }
+  let onHeaderClick = () => {
+    callAction({
+      action:
+        SVs.open && SVs.canBeClosed
+          ? actions.closeSolution
+          : actions.revealSolution,
+    });
+  };
 
   return (
     <VisibilitySensor partialVisibility={true} onChange={onChangeVisibility}>
-      <aside id={id} style={{ margin: "12px 0" }}>
+      <div id={id} className="py-2">
         <a name={id} />
-        <SpanStyling
-          style={{
-            display: "block",
-            margin: SVs.open ? "12px 4px 0px 4px" : "12px 4px 12px 4px",
-            padding: "6px",
-            border: "2px solid var(--canvastext)",
-            borderTopLeftRadius: "5px",
-            borderTopRightRadius: "5px",
-            borderBottomLeftRadius: SVs.open ? "0px" : "5px",
-            borderBottomRightRadius: SVs.open ? "0px" : "5px",
-            backgroundColor: "var(--mainGray)",
-            cursor: "pointer",
-          }}
-          tabIndex="0"
-          id={id + "_button"}
-          onClick={onClickFunction}
-          onKeyDown={onKeyPressFunction}
+        <button
+          className={`${
+            SVs.open &&
+            `text-primary [box-shadow:inset_0_-1px_0_rgba(229,231,235)]`
+          } w-full group relative bg-slate-100 border border-transparent rounded-md transition [overflow-anchor:none] hover:z-[2] focus:z-[3] focus:outline-none focus:border-sky-500 focus:ring-sky-500 focus:ring-1`}
+          onClick={onHeaderClick}
+          onKeyDown={(e) => e.key === "Enter" && onHeaderClick}
+          aria-expanded="true"
+          aria-controls="collapseOne"
         >
-          {icon} {SVs.sectionName} {SVs.message} (click to {openCloseText})
-        </SpanStyling>
-        <span style={infoBlockStyle}>{childrenToRender}</span>
-      </aside>
+          <div className="flex items-center justify-between px-5 py-4">
+            <div className="flex items-center">
+              <span
+                className={`${
+                  SVs.open ? `rotate-[90deg] ` : `rotate-0 fill-[#212529]`
+                } mr-3 flex items-center shrink-0 fill-[#336dec] transition-transform duration-200 ease-in-out motion-reduce:transition-none dark:fill-blue-300`}
+              >
+                <FontAwesomeIcon className="w-4 h-4" icon={faPuzzlePiece} />
+              </span>
+              Solution (click to {SVs.open ? "close" : "open"})
+            </div>
+            <span
+              className={`${
+                SVs.open ? `rotate-[-180deg] ` : `rotate-0 fill-[#212529]`
+              } ml-auto h-5 w-5 shrink-0 fill-[#336dec] transition-transform duration-200 ease-in-out motion-reduce:transition-none`}
+            >
+              <FontAwesomeIcon icon={faChevronDown} />
+            </span>
+          </div>
+        </button>
+        <TECollapse
+          show={SVs.open}
+          className="!mt-0 !rounded-b-none !shadow-none"
+        >
+          <div className="w-full px-5 py-4 rounded-none border border-l-0 border-r-0 border-t-0 border-neutral-200">
+            {children}
+          </div>
+        </TECollapse>
+      </div>
     </VisibilitySensor>
   );
 });

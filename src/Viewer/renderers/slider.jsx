@@ -9,6 +9,87 @@ import { useSetRecoilState } from "recoil";
 import { rendererState } from "../useDoenetRenderer";
 import { MathJax } from "better-react-mathjax";
 
+// Commented code below: Tailwind version of slider ~ by Lee
+// Code commented due to differences in how the current slider works and this NEW slider works, different props/way of using props
+// Ex1: steps in the current slider refers to the difference between ticks, this new slider refers it to how far the thumb jumps
+// Ex2: ticks in the new slider refers to the number of ticks on the whole slider, which can't be controlled in the current slider
+// Code sandbox link to view how this component works: https://codesandbox.io/p/devbox/slider-component-tj9pr6?file=%2Fmy-project%2Fsrc%2Fcomponents%2FSlider.jsx
+// To run: go to terminal, run 'cd my-project', then 'npm start', navigate to 'App.jsx' to modify and test with difference props
+
+// export default function Slider({
+//   min = 0,
+//   max = 100,
+//   label,
+//   step,
+//   options,
+//   value,
+//   onChange,
+//   disabled,
+//   ticks,
+// }) {
+//   const [tickValues, setTickValues] = useState([]);
+
+//   const getDecimalPlaces = (number) => {
+//     if (Math.floor(number) === number) return 0;
+//     return number.toString().split(".")[1].length || 0;
+//   };
+
+//   useEffect(() => {
+//     if (options) {
+//       if (options.length > 1) setTickValues(options);
+//       else console.log("At least 2 options should be provided...");
+//     } else if (ticks) {
+//       let difference = max - min;
+//       if (difference > ticks) {
+//         while (difference % ticks !== 0) ticks--;
+//       } else {
+//         while (getDecimalPlaces(difference / ticks) > 2) ticks--;
+//       }
+//       let marks = [];
+//       let tickStep = difference / ticks;
+//       for (let i = min; Math.round(i * 100) / 100 <= max; i += tickStep) {
+//         marks.push(i.toFixed(getDecimalPlaces(tickStep)));
+//       }
+//       setTickValues(marks);
+//     }
+//   }, []);
+
+//   return (
+//     <div className="flex flex-col">
+//       {label && (
+//         <span className="mb-2 inline-block text-neutral-900">{label}</span>
+//       )}
+//       <div className="px-2">
+//         <input
+//           type="range"
+//           className="appearance-none w-full transparent h-1.5 cursor-pointer rounded-lg border-transparent bg-neutral-200 focus:outline-none"
+//           value={value}
+//           min={options ? 0 : min}
+//           max={options ? options.length - 1 : max}
+//           step={options ? 1 : step}
+//           onChange={(event) => onChange && onChange(event.target.value)}
+//           disabled={disabled}
+//         />
+//       </div>
+//       {tickValues.length > 0 && (
+//         <div className="flex justify-between mt-1 text-xs text-gray-600">
+//           {tickValues.map((tick, idx) => (
+//             <span
+//               key={`tick-${idx}`}
+//               className={`${
+//                 options ? "w-12" : "w-8"
+//               } mx-0.5 text-center text-ellipsis overflow-hidden hover:overflow-visible hover:cursor-pointer`}
+//               onClick={() => onChange && onChange(tick)}
+//             >
+//               {tick}
+//             </span>
+//           ))}
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
 let round_to_decimals = (x, n) => me.round_numbers_to_decimals(x, n).tree;
 
 const SliderContainer = styled.div`

@@ -16,6 +16,7 @@ import { MathJax } from "better-react-mathjax";
 import { BoardContext } from "./graph";
 import me from "math-expressions";
 import { getPositionFromAnchorByCoordinate } from "../../Core/utils/graphical";
+import { Label, TextInput as Input, Textarea } from 'flowbite-react';
 
 // Moved most of checkWorkStyle styling into Button
 const Button = styled.button`
@@ -34,35 +35,6 @@ const Button = styled.button`
   &:hover {
     background-color: var(--lightBlue);
     color: black;
-  }
-`;
-
-const TextArea = styled.textarea`
-  width: ${(props) => props.width};
-  height: ${(props) =>
-    props.height}; // Same height as the checkWorkButton, accounting for the borders
-  font-size: 14px;
-  border: ${(props) =>
-    props.disabled ? "2px solid var(--mainGray)" : "var(--mainBorder)"};
-  cursor: ${(props) => (props.disabled ? "not-allowed" : "auto")};
-
-  &:focus {
-    outline: var(--mainBorder);
-    outline-offset: 2px;
-  }
-`;
-
-const Input = styled.input`
-  width: ${(props) => props.width};
-  height: 20px; // Same height as the checkWorkButton, accounting for the borders
-  font-size: 14px;
-  border: ${(props) =>
-    props.disabled ? "2px solid var(--mainGray)" : "var(--mainBorder)"};
-  cursor: ${(props) => (props.disabled ? "not-allowed" : "auto")};
-
-  &:focus {
-    outline: var(--mainBorder);
-    outline-offset: 2px;
   }
 `;
 
@@ -711,50 +683,39 @@ export default function TextInput(props) {
   }
   if (SVs.expanded) {
     input = (
-      <label style={{ display: "inline-flex", maxWidth: "100%" }}>
-        {label}
-        <TextArea
+      <div className="flex items-center">
+        {label && <Label htmlFor={inputKey} value={label} className="mr-2" />}
+        <Textarea
+          rows="2"
           key={inputKey}
           id={inputKey}
           value={rendererValue}
           disabled={disabled}
           onChange={onChangeHandler}
-          onKeyPress={handleKeyPress}
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
           onFocus={handleFocus}
           width={width}
           height={height}
-          style={{
-            margin: "0px 4px 4px 4px",
-            color: "var(--canvastext)",
-            background: "var(--canvas)",
-          }}
         />
-      </label>
+      </div>
     );
   } else {
     input = (
-      <label style={{ display: "inline-flex", maxWidth: "100%" }}>
-        {label}
+      <div className="flex items-center">
+        {label && <Label htmlFor={inputKey} value={label} className="mr-2" />}
         <Input
           key={inputKey}
           id={inputKey}
           value={rendererValue}
           disabled={disabled}
           onChange={onChangeHandler}
-          onKeyPress={handleKeyPress}
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
           onFocus={handleFocus}
           width={width}
-          style={{
-            margin: "0px 4px 4px 4px",
-            color: "var(--canvastext)",
-            background: "var(--canvas)",
-          }}
         />
-      </label>
+      </div>
     );
   }
 
