@@ -65,8 +65,8 @@ export default React.memo(function Answer(props) {
       checkWorkText = SVs.submitLabelNoCorrectness;
     }
     let checkworkComponent = (
-      <Button
-        color="dark"
+      <button
+        className="check-work-default"
         id={id + "_submit"}
         tabIndex="0"
         disabled={disabled}
@@ -80,42 +80,42 @@ export default React.memo(function Answer(props) {
         <FontAwesomeIcon icon={faLevelDownAlt} transform={{ rotate: 90 }} />
         &nbsp;
         {checkWorkText}
-      </Button>
+      </button>
     );
 
     if (SVs.showCorrectness) {
       if (validationState === "correct") {
         checkworkComponent = (
-          <Button className="check-work bg-green-700" id={id + "_correct"}>
+          <button className="check-work-green" id={id + "_correct"}>
             <FontAwesomeIcon icon={faCheck} />
             &nbsp; Correct
-          </Button>
+          </button>
         );
       } else if (validationState === "incorrect") {
         checkworkComponent = (
-          <Button className="check-work bg-red-700" id={id + "_incorrect"}>
+          <button className="check-work-red" id={id + "_incorrect"}>
             <FontAwesomeIcon icon={faTimes} />
             &nbsp; Incorrect
-          </Button>
+          </button>
         );
       } else if (validationState === "partialcorrect") {
         let percent = Math.round(SVs.creditAchieved * 100);
         let partialCreditContents = `${percent}% Correct`;
 
         checkworkComponent = (
-          <Button className="check-work bg-orange-700" id={id + "_partial"}>
+          <button className="check-work-yellow" id={id + "_partial"}>
             {partialCreditContents}
-          </Button>
+          </button>
         );
       }
     } else {
       // showCorrectness is false
       if (validationState !== "unvalidated") {
         checkworkComponent = (
-          <Button className="check-work bg-purple-700" id={id + "_saved"}>
+          <button className="check-work-purple" id={id + "_saved"}>
             <FontAwesomeIcon icon={faCloud} />
             &nbsp; Response Saved
-          </Button>
+          </button>
         );
       }
     }

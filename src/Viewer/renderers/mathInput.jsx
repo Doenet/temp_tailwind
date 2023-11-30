@@ -21,28 +21,7 @@ import { MathJax } from "better-react-mathjax";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { rendererState } from "../useDoenetRenderer";
 import "./mathInput.css";
-
-// Moved most of checkWorkStyle styling into Button
-const Button = styled.button`
-  position: relative;
-  width: 24px;
-  height: 24px;
-  color: #ffffff;
-  background-color: var(--mainBlue);
-  display: inline-block;
-  text-align: center;
-  padding: 2px;
-  z-index: 0;
-  /* border: var(--mainBorder); */
-  border: none;
-  border-radius: var(--mainBorderRadius);
-  margin: 0px 4px 4px 0px;
-
-  &:hover {
-    background-color: var(--lightBlue);
-    color: black;
-  }
-`;
+import "./answer.css";
 
 export default function MathInput(props) {
   let {
@@ -200,11 +179,6 @@ export default function MathInput(props) {
 
   // const inputKey = this.componentName + '_input';
 
-  let checkWorkStyle = {
-    cursor: "pointer",
-    padding: "1px 6px 1px 6px",
-  };
-
   let mathInputStyle = {
     /* Set each border attribute separately since the borderColor is updated during rerender (checking mathInput's disabled state)
     Currently does not work with border: "var(--mainBorder)" */
@@ -225,13 +199,6 @@ export default function MathInput(props) {
 
   let mathInputWrapperCursor = "allowed";
   if (SVs.disabled) {
-    // Disable the checkWorkButton
-    checkWorkStyle.backgroundColor = getComputedStyle(
-      document.documentElement,
-    ).getPropertyValue("--mainGray");
-    checkWorkStyle.color = "black";
-    checkWorkStyle.cursor = "not-allowed";
-
     // Disable the mathInput
     mathInputStyle.borderColor = getComputedStyle(
       document.documentElement,
@@ -251,11 +218,11 @@ export default function MathInput(props) {
   if (SVs.includeCheckWork && !SVs.suppressCheckwork) {
     if (validationState.current === "unvalidated") {
       checkWorkButton = (
-        <Button
+        <button
+          className="check-work-default"
           id={id + "_submit"}
           tabIndex="0"
           disabled={SVs.disabled}
-          style={checkWorkStyle}
           onClick={() =>
             callAction({
               action: actions.submitAnswer,
@@ -270,51 +237,41 @@ export default function MathInput(props) {
           }}
         >
           <FontAwesomeIcon icon={faLevelDownAlt} transform={{ rotate: 90 }} />
-        </Button>
+        </button>
       );
     } else {
       if (SVs.showCorrectness) {
         if (validationState.current === "correct") {
-          checkWorkStyle.backgroundColor = getComputedStyle(
-            document.documentElement,
-          ).getPropertyValue("--mainGreen");
           checkWorkButton = (
-            <Button id={id + "_correct"} style={checkWorkStyle}>
+            <button className="check-work-green" id={id + "_correct"}>
               <FontAwesomeIcon icon={faCheck} />
-            </Button>
+            </button>
           );
         } else if (validationState.current === "partialcorrect") {
           //partial credit
 
           let percent = Math.round(SVs.creditAchieved * 100);
           let partialCreditContents = `${percent} %`;
-          checkWorkStyle.width = "44px";
 
-          checkWorkStyle.backgroundColor = "#efab34";
           checkWorkButton = (
-            <Button id={id + "_partial"} style={checkWorkStyle}>
+            <button className="check-work-yellow" id={id + "_partial"}>
               {partialCreditContents}
-            </Button>
+            </button>
           );
         } else {
           //incorrect
-          checkWorkStyle.backgroundColor = getComputedStyle(
-            document.documentElement,
-          ).getPropertyValue("--mainRed");
           checkWorkButton = (
-            <Button id={id + "_incorrect"} style={checkWorkStyle}>
+            <button className="check-work-red" id={id + "_incorrect"}>
               <FontAwesomeIcon icon={faTimes} />
-            </Button>
+            </button>
           );
         }
       } else {
         // showCorrectness is false
-        checkWorkStyle.backgroundColor = "rgb(74, 3, 217)";
-        checkWorkStyle.padding = "1px 8px 1px 4px"; // To center the faCloud icon
         checkWorkButton = (
-          <Button id={id + "_saved"} style={checkWorkStyle}>
-            <FontAwesomeIcon icon={faCloud} />
-          </Button>
+          <button id={id + "_saved"}>
+            <FontAwesomeIcon className="check-work-purple" icon={faCloud} />
+          </button>
         );
       }
     }

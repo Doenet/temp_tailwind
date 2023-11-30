@@ -21,7 +21,11 @@ button.check-work-default {
   dark:bg-blue-600
   dark:hover:bg-blue-700
   focus:outline-none
-  dark:focus:ring-blue-800;
+  dark:focus:ring-blue-800
+
+  disabled:bg-blue-400 
+  disabled:dark:bg-blue-500
+  disabled:cursor-not-allowed;
 }
 
 button.check-work-green {
@@ -38,7 +42,11 @@ button.check-work-green {
   me-2 mb-2
   dark:bg-green-600
   dark:hover:bg-green-700
-  dark:focus:ring-green-800;
+  dark:focus:ring-green-800
+
+  disabled:bg-green-400 
+  disabled:dark:bg-green-500
+  disabled:cursor-not-allowed;
 }
 
 button.check-work-yellow {
@@ -53,7 +61,11 @@ button.check-work-yellow {
   text-sm
   px-3 py-1.5
   me-2 mb-2
-  dark:focus:ring-yellow-900;
+  dark:focus:ring-yellow-900
+
+  disabled:bg-yellow-300
+  disabled:dark:bg-yellow-500
+  disabled:cursor-not-allowed;
 }
 
 button.check-work-red {
@@ -70,7 +82,11 @@ button.check-work-red {
   me-2 mb-2
   dark:bg-red-600
   dark:hover:bg-red-700
-  dark:focus:ring-red-900;
+  dark:focus:ring-red-900
+
+  disabled:bg-red-400
+  disabled:dark:bg-red-500
+  disabled:cursor-not-allowed;
 }
 
 button.check-work-purple {
@@ -87,5 +103,9 @@ button.check-work-purple {
   me-2 mb-2
   dark:bg-purple-600
   dark:hover:bg-purple-700
-  dark:focus:ring-purple-900;
+  dark:focus:ring-purple-900
+
+  disabled:bg-purple-400
+  disabled:dark:bg-purple-500
+  disabled:cursor-not-allowed;
 }
