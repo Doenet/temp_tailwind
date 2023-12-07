@@ -269,8 +269,8 @@ export default function MathInput(props) {
       } else {
         // showCorrectness is false
         checkWorkButton = (
-          <button id={id + "_saved"}>
-            <FontAwesomeIcon className="check-work-purple" icon={faCloud} />
+          <button className="check-work-purple" id={id + "_saved"}>
+            <FontAwesomeIcon icon={faCloud} />
           </button>
         );
       }

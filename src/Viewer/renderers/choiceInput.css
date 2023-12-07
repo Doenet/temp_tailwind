@@ -25,7 +25,8 @@ input.radio-input {
 /*
 FLOWBITE STYLING FOR RADIO/CHECKBOX LABEL (DISABLED INCLUDED)
 */
-label.label {
+/* This is currently not working; I think it's because choiceInput has a {child} within the <lable /> */
+label.input-label {
   @apply ms-2
   text-sm
   font-medium

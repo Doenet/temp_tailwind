@@ -410,7 +410,8 @@ export default React.memo(function ChoiceInput(props) {
               />
               <label
                 htmlFor={keyBeginning + (i + 1) + "_input"}
-                className="label"
+                className="input-label"
+                disabled={radioDisabled}
               >
                 {child}
               </label>
@@ -433,12 +434,11 @@ export default React.memo(function ChoiceInput(props) {
                 checked={rendererSelectedIndices.includes(i + 1)}
                 onChange={onChangeHandler}
                 disabled={checkboxDisabled}
-              />
-              ={" "}
+              />{" "}
               <label
                 htmlFor={keyBeginning + (i + 1) + "_input"}
-                className="label"
-                disabled={disabled}
+                className="input-label"
+                disabled={checkboxDisabled}
               >
                 {child}
               </label>
